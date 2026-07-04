@@ -1,64 +1,93 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 
 import '../../resources/repository.dart';
 import '../../theme/app_theme.dart';
-import '../../utils/uz_phone_formatter.dart';
 import '../dialogs/center_dialog.dart';
 import '../dialogs/response_popup.dart';
 import '../widgets/auth_banner.dart';
 import '../widgets/buttons/secondary_button.dart';
 import '../widgets/textfield/labeled_input_field.dart';
-import 'reset_password_verification_screen.dart';
+import 'login_screen.dart';
 
-/// Collects the user's phone number to start the password-recovery flow.
-/// A verification code is sent (reusing the resend endpoint) and the user is
-/// taken to the verification screen.
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+/// Step 2 of the password-reset flow.
+///
+/// Receives the [phone] and [verificationCode] collected in the previous
+/// screens and lets the user choose a new password.
+/// On success the user is redirected to [LoginScreen].
+class ResetPasswordScreen extends StatefulWidget {
+  const ResetPasswordScreen({
+    super.key,
+    required this.phone,
+    required this.verificationCode,
+  });
+
+  final String phone;
+  final String verificationCode;
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final TextEditingController _phoneController = TextEditingController();
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmController = TextEditingController();
   final Repository _repository = Repository();
   bool _isLoading = false;
 
   static const Color _pageBg = Color(0xFFF2F3F5);
 
   Future<void> _submit() async {
-    final digits = uzPhoneDigits(_phoneController.text);
-    if (digits.length != 9) {
+    final password = _passwordController.text.trim();
+    final confirm = _confirmController.text.trim();
+
+    if (password.isEmpty || confirm.isEmpty) {
       CenterDialog.showActionFailed(
         context,
-        translate("auth.error"),
-        translate("auth.enter_phone"),
+        translate('auth.error'),
+        translate('auth.fill_login_fields'),
       );
       return;
     }
 
-    final phone = uzFullPhone(_phoneController.text);
+    if (password != confirm) {
+      CenterDialog.showActionFailed(
+        context,
+        translate('auth.password_error'),
+        translate('auth.password_mismatch'),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
-    final response = await _repository.fetchSendResetCode(phone);
+    final response = await _repository.fetchResetPassword(
+      widget.phone,
+      widget.verificationCode,
+      password,
+      confirm,
+    );
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (response.isSuccess) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ResetPasswordVerificationScreen(phone: phone),
-        ),
-      );
-    } else {
       showResponsePopup(
         context,
-        status: 'error',
-        message: response.status == -1
-            ? translate("auth.connection_failed_msg")
-            : translate("auth.failed_msg"),
+        status: 'success',
+        message: translate('auth.reset_success'),
+      );
+      // Pop back to the first route (splash/login gate) and push login.
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    } else {
+      CenterDialog.showActionFailed(
+        context,
+        translate('auth.reset_failed'),
+        response.status == -1
+            ? translate('auth.connection_failed_msg')
+            : translate('auth.failed_msg'),
       );
     }
   }
@@ -70,10 +99,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       backgroundColor: _pageBg,
       body: GestureDetector(
         onTap: () {
-          final currentFocus = FocusScope.of(context);
-          if (!currentFocus.hasPrimaryFocus) {
-            currentFocus.unfocus();
-          }
+          final focus = FocusScope.of(context);
+          if (!focus.hasPrimaryFocus) focus.unfocus();
         },
         child: SafeArea(
           child: Stack(
@@ -103,8 +130,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   decoration: BoxDecoration(
                                     color: _pageBg,
                                     shape: BoxShape.circle,
-                                    border:
-                                        Border.all(color: AppTheme.inputBorder),
+                                    border: Border.all(
+                                        color: AppTheme.inputBorder),
                                   ),
                                   child: const Icon(
                                     Icons.arrow_back_rounded,
@@ -117,12 +144,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           ),
                           const AuthBanner(),
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 8, 24, 22),
+                            padding:
+                                const EdgeInsets.fromLTRB(24, 8, 24, 22),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  translate("auth.forgot_password"),
+                                  translate('auth.reset_password'),
                                   style: const TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w700,
@@ -132,7 +160,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  translate("auth.forgot_subtitle"),
+                                  translate('auth.reset_subtitle'),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w400,
@@ -162,23 +190,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             ),
                           ],
                         ),
-                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                        padding:
+                            const EdgeInsets.fromLTRB(16, 20, 16, 24),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             LabeledInputField(
-                              title: translate("auth.phone_number"),
-                              hint: 'XX XXX XX XX',
-                              icon: Icons.phone_outlined,
-                              controller: _phoneController,
-                              phone: true,
-                              prefixText: '+998 ',
-                              inputFormatters: [UzPhoneFormatter()],
+                              title: translate('auth.new_password'),
+                              hint: translate('auth.new_password_hint'),
+                              icon: Icons.lock_outline,
+                              controller: _passwordController,
+                              pass: true,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 16),
+                            LabeledInputField(
+                              title: translate('auth.confirm_password'),
+                              hint: translate('auth.confirm_password_hint'),
+                              icon: Icons.lock_outline,
+                              controller: _confirmController,
+                              pass: true,
                               textInputAction: TextInputAction.done,
                             ),
                             const SizedBox(height: 22),
                             SecondaryButton(
-                              title: translate("auth.send_code"),
+                              title: translate('auth.reset_password'),
                               showArrow: true,
                               onTap: _submit,
                             ),
@@ -223,3 +259,4 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 }
+

@@ -2,7 +2,7 @@ const http = require('http');
 const https = require('https');
 const url = require('url');
 
-const TARGET = 'https://qadam.services';
+const TARGET = 'https://backend.ketamiz.com';
 const PORT = 8081;
 
 http.createServer((req, res) => {

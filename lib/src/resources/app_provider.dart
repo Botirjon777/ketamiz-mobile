@@ -233,6 +233,44 @@ class ApiProvider {
     return await postRequest(url, data);
   }
 
+  /// Send Reset Code Post — step 1 of the password-reset flow.
+  Future<HttpResult> fetchSendResetCode(String phone) async {
+    String url = '$baseUrl/auth/send-reset-code';
+
+    phone = phone.replaceAll(' ', '').replaceAll('-', '').replaceAll('(', '').replaceAll(')', '');
+    if (!phone.startsWith('+')) {
+      phone = '+$phone';
+    }
+
+    final data = {
+      "phone": phone,
+    };
+    return await postRequest(url, data);
+  }
+
+  /// Reset Password Post — step 2 of the password-reset flow.
+  Future<HttpResult> fetchResetPassword(
+    String phone,
+    String verificationCode,
+    String password,
+    String passwordConfirmation,
+  ) async {
+    String url = '$baseUrl/auth/reset-password';
+
+    phone = phone.replaceAll(' ', '').replaceAll('-', '').replaceAll('(', '').replaceAll(')', '');
+    if (!phone.startsWith('+')) {
+      phone = '+$phone';
+    }
+
+    final data = {
+      "phone": phone,
+      "verification_code": verificationCode,
+      "password": password,
+      "password_confirmation": passwordConfirmation,
+    };
+    return await postRequest(url, data);
+  }
+
   /// Verify Code Post
   Future<HttpResult> fetchVerifyCode(String phone, String code) async {
     String url = '$baseUrl/auth/verify-code';

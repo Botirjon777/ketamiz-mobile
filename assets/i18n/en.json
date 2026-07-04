@@ -96,7 +96,15 @@
     "enter_code": "Enter Code",
     "verify": "Verify",
     "sending": "Sending...",
-    "code_resent": "Code resent"
+    "code_resent": "Code resent",
+    "reset_password": "Reset Password",
+    "reset_subtitle": "Enter the code sent to your number and choose a new password.",
+    "new_password": "New Password",
+    "new_password_hint": "Enter new password",
+    "reset_success": "Password reset successfully",
+    "reset_failed": "Reset Failed",
+    "verification_code": "Verification Code",
+    "enter_reset_code": "Enter the code sent to your phone to reset your password"
   },
   "home": {
     "home": "Home",

@@ -30,6 +30,22 @@ class Repository {
   Future<HttpResult> fetchVerificationResend(String phone) =>
       apiProvider.fetchVerificationResend(phone);
 
+  Future<HttpResult> fetchSendResetCode(String phone) =>
+      apiProvider.fetchSendResetCode(phone);
+
+  Future<HttpResult> fetchResetPassword(
+    String phone,
+    String verificationCode,
+    String password,
+    String passwordConfirmation,
+  ) =>
+      apiProvider.fetchResetPassword(
+        phone,
+        verificationCode,
+        password,
+        passwordConfirmation,
+      );
+
   Future<HttpResult> fetchVerifyCode(String phone, String code) =>
       apiProvider.fetchVerifyCode(phone, code);
 

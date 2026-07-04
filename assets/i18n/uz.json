@@ -96,7 +96,15 @@
     "enter_code": "Kodni kiriting",
     "verify": "Tasdiqlash",
     "sending": "Yuborilmoqda...",
-    "code_resent": "Kod qayta yuborildi"
+    "code_resent": "Kod qayta yuborildi",
+    "reset_password": "Parolni tiklash",
+    "reset_subtitle": "Raqamingizga yuborilgan kodni kiriting va yangi parol tanlang.",
+    "new_password": "Yangi parol",
+    "new_password_hint": "Yangi parolni kiriting",
+    "reset_success": "Parol muvaffaqiyatli tiklandi",
+    "reset_failed": "Tiklash muvaffaqiyatsiz",
+    "verification_code": "Tasdiqlash kodi",
+    "enter_reset_code": "Parolni tiklash uchun telefoningizga yuborilgan kodni kiriting"
   },
   "home": {
     "home": "Bosh sahifa",
