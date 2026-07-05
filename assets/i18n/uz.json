@@ -364,6 +364,7 @@
     "start_time": "Jo'nash vaqti",
     "est_arrival_time": "Taxminiy yetib borish vaqti",
     "price_tooltip": "O'zingiz uchun mos narxni kiriting",
+    "price_per_seat_note": "Ushbu narx bitta o'rindiq uchun belgilanadi",
     "seats_tooltip": "Nechta yo'lovchi olishingiz mumkinligini belgilang",
     "no_passenger": "Hali yo'lovchilar yo'q",
     "car_model_hint": "Model nomini kiriting",

@@ -364,6 +364,7 @@
     "start_time": "Departure time",
     "est_arrival_time": "Estimated arrival time",
     "price_tooltip": "Write an appropriate price for you",
+    "price_per_seat_note": "This price is charged per seat",
     "seats_tooltip": "How many clients you can take",
     "no_passenger": "No passengers yet",
     "car_model_hint": "Enter car model name",

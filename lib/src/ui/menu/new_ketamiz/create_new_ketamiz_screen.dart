@@ -797,6 +797,22 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
               ),
             ),
           ),
+          if (controller.text.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                controller.text,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.gray,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           GestureDetector(
             onTap: onMapTap,
@@ -1106,8 +1122,6 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
                   size: 18, color: AppTheme.purple),
               const SizedBox(width: 8),
               Text16h500w(title: translate("ketamiz.price_label")),
-              const SizedBox(width: 6),
-              InfoTooltip(message: translate("ketamiz.price_tooltip")),
             ],
           ),
           const SizedBox(height: 12),
@@ -1148,6 +1162,16 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
                   color: AppTheme.purple,
                 ),
               ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            translate("ketamiz.price_per_seat_note"),
+            style: const TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: AppTheme.gray,
             ),
           ),
         ],
