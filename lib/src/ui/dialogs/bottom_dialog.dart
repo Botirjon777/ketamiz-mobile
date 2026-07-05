@@ -958,10 +958,10 @@ class BottomDialog {
                       ),
                     ],
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
-                      'Choose',
-                      style: TextStyle(
+                      translate("home.select"),
+                      style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                         fontFamily: AppTheme.fontFamily,

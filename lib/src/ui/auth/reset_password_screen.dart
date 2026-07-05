@@ -20,10 +20,15 @@ class ResetPasswordScreen extends StatefulWidget {
     super.key,
     required this.phone,
     required this.verificationCode,
+    this.onSuccess,
   });
 
   final String phone;
   final String verificationCode;
+
+  /// When set (e.g. changing password from the profile screen while already
+  /// logged in), called instead of the default redirect to [LoginScreen].
+  final VoidCallback? onSuccess;
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -75,12 +80,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         status: 'success',
         message: translate('auth.reset_success'),
       );
-      // Pop back to the first route (splash/login gate) and push login.
-      Navigator.of(context).popUntil((route) => route.isFirst);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+      if (widget.onSuccess != null) {
+        widget.onSuccess!();
+      } else {
+        // Pop back to the first route (splash/login gate) and push login.
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      }
     } else {
       CenterDialog.showActionFailed(
         context,

@@ -8,6 +8,7 @@ import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/snack_bar.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/add_docs_screen.dart';
+import 'package:ketamiz/src/ui/menu/profile/change_password_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/edit_profile_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/my_vehicles_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/support_screen.dart';
@@ -155,10 +156,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 20),
             ],
             _sectionLabel(translate("profile.settings")),
-            SettingsContainer(
-              settingsModel: SettingsModel(
-                icon: Icons.lock_outline_rounded,
-                title: translate("profile.change_password"),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+              ),
+              child: SettingsContainer(
+                settingsModel: SettingsModel(
+                  icon: Icons.lock_outline_rounded,
+                  title: translate("profile.change_password"),
+                ),
               ),
             ),
             GestureDetector(

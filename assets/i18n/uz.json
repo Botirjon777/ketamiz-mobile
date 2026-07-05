@@ -388,7 +388,9 @@
     "invalid_tech_serie": "Seriya aniq 3 harf bo'lishi kerak (mas: AAG)",
     "invalid_tech_number": "Raqam aniq 7 xonali bo'lishi kerak (mas: 8534413)",
     "cancel_info_msg": "Siz ushbu sayohatni {time} gacha bekor qila olasiz.",
-    "driver_terms": "Haydovchilar uchun foydalanish shartlari"
+    "driver_terms": "Haydovchilar uchun foydalanish shartlari",
+    "support_note": "To'ldirishda muammo bo'lsa,",
+    "support_link_label": "qo'llab-quvvatlash xizmatiga murojaat qiling"
   },
   "search": {
     "all": "Barchasi",
@@ -405,6 +407,7 @@
     "edit_profile": "Tahrirlash",
     "settings": "Sozlamalar",
     "change_password": "Parolni o'zgartirish",
+    "change_password_subtitle": "O'zgarishni tasdiqlash uchun telefon raqamingizga tasdiqlash kodi yuboriladi.",
     "language": "Til",
     "notifications": "Bildirishnomalar",
     "about_us": "Biz haqimizda",

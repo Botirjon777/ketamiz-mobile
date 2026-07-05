@@ -378,6 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         LabeledInputField(
+          key: const ValueKey('login_phone'),
           title: translate("auth.phone_number"),
           hint: 'XX XXX XX XX',
           icon: Icons.phone_outlined,
@@ -390,6 +391,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 14),
         LabeledInputField(
+          key: const ValueKey('login_password'),
           title: translate("auth.password"),
           hint: translate("auth.password_hint"),
           icon: Icons.lock_outline_rounded,
@@ -409,33 +411,40 @@ class _LoginScreenState extends State<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         LabeledInputField(
+          key: const ValueKey('reg_first_name'),
           title: translate("auth.first_name"),
           hint: translate("auth.first_name_hint"),
           icon: Icons.person_outline_rounded,
           controller: firstNameController,
           scrollPadding: _fieldScrollPadding,
           textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.givenName],
         ),
         const SizedBox(height: 14),
         LabeledInputField(
+          key: const ValueKey('reg_last_name'),
           title: translate("auth.last_name"),
           hint: translate("auth.last_name_hint"),
           icon: Icons.person_outline_rounded,
           controller: lastNameController,
           scrollPadding: _fieldScrollPadding,
           textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.familyName],
         ),
         const SizedBox(height: 14),
         LabeledInputField(
+          key: const ValueKey('reg_father_name'),
           title: translate("auth.father_name"),
           hint: translate("auth.father_name_hint"),
           icon: Icons.person_outline_rounded,
           controller: fatherNameController,
           scrollPadding: _fieldScrollPadding,
           textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.middleName],
         ),
         const SizedBox(height: 14),
         LabeledInputField(
+          key: const ValueKey('reg_phone'),
           title: translate("auth.phone_number"),
           hint: 'XX XXX XX XX',
           icon: Icons.phone_outlined,
@@ -445,30 +454,34 @@ class _LoginScreenState extends State<LoginScreen> {
           inputFormatters: [UzPhoneFormatter()],
           scrollPadding: _fieldScrollPadding,
           textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.telephoneNumber],
         ),
         const SizedBox(height: 14),
         LabeledInputField(
+          key: const ValueKey('reg_password'),
           title: translate("auth.password"),
           hint: translate("auth.password_min_hint"),
           icon: Icons.lock_outline_rounded,
           controller: passRegController,
-          pass: true,
           scrollPadding: _fieldScrollPadding,
           textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.newPassword],
         ),
         const SizedBox(height: 14),
         LabeledInputField(
+          key: const ValueKey('reg_confirm_password'),
           title: translate("auth.confirm_password"),
           hint: translate("auth.confirm_password_hint"),
           icon: Icons.lock_outline_rounded,
           controller: passAgainController,
-          pass: true,
           scrollPadding: _fieldScrollPadding,
           textInputAction: TextInputAction.done,
+          autofillHints: const [AutofillHints.newPassword],
         ),
       ],
     );
   }
+
 
   Widget _buildTermsCheckbox() {
     return Row(
@@ -647,7 +660,6 @@ class _LoginScreenState extends State<LoginScreen> {
           phoneRegController.text.isNotEmpty &&
           passRegController.text.isNotEmpty &&
           Validators.phoneNumberValidator(phone) == true &&
-          Validators.passwordValidator(passRegController.text) == true &&
           passAgainController.text == passRegController.text) {
         setState(() {
           isLoading = true;
@@ -725,13 +737,6 @@ class _LoginScreenState extends State<LoginScreen> {
           context,
           translate('auth.error'),
           translate('auth.invalid_phone_format'),
-        );
-      } else if (Validators.passwordValidator(passRegController.text) ==
-          false) {
-        CenterDialog.showActionFailed(
-          context,
-          translate('auth.password_error'),
-          translate('auth.password_requirements'),
         );
       } else if (passAgainController.text != passRegController.text) {
         CenterDialog.showActionFailed(

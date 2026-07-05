@@ -20,6 +20,8 @@ class LabeledInputField extends StatefulWidget {
     this.keyboardType,
     this.textInputAction,
     this.scrollPadding = const EdgeInsets.all(20),
+    this.autofillHints,
+    this.enabled = true,
   });
 
   final String title;
@@ -33,6 +35,10 @@ class LabeledInputField extends StatefulWidget {
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final EdgeInsets scrollPadding;
+  final Iterable<String>? autofillHints;
+
+  /// Set to false to show the field as a read-only, non-editable value.
+  final bool enabled;
 
   @override
   State<LabeledInputField> createState() => _LabeledInputFieldState();
@@ -51,7 +57,7 @@ class _LabeledInputFieldState extends State<LabeledInputField> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: widget.enabled ? Colors.white : const Color(0xFFF4F5F7),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFEDEFF2)),
       ),
@@ -63,10 +69,14 @@ class _LabeledInputFieldState extends State<LabeledInputField> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.purple.withOpacity(0.08),
+              color: AppTheme.purple.withOpacity(widget.enabled ? 0.08 : 0.05),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(widget.icon, color: AppTheme.purple, size: 20),
+            child: Icon(
+              widget.icon,
+              color: widget.enabled ? AppTheme.purple : AppTheme.gray,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -103,6 +113,8 @@ class _LabeledInputFieldState extends State<LabeledInputField> {
                       child: TextField(
                         controller: widget.controller,
                         obscureText: _obscure,
+                        enabled: widget.enabled,
+                        autofillHints: widget.autofillHints,
                         keyboardType: widget.keyboardType ??
                             (widget.phone
                                 ? TextInputType.phone

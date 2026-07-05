@@ -24,9 +24,13 @@ class ResetPasswordVerificationScreen extends StatefulWidget {
   const ResetPasswordVerificationScreen({
     super.key,
     required this.phone,
+    this.onSuccess,
   });
 
   final String phone;
+
+  /// Forwarded to [ResetPasswordScreen]; see its doc for details.
+  final VoidCallback? onSuccess;
 
   @override
   State<ResetPasswordVerificationScreen> createState() =>
@@ -137,6 +141,7 @@ class _ResetPasswordVerificationScreenState
         builder: (context) => ResetPasswordScreen(
           phone: widget.phone,
           verificationCode: pin,
+          onSuccess: widget.onSuccess,
         ),
       ),
     );

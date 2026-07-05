@@ -388,7 +388,9 @@
     "invalid_tech_serie": "Serie must be exactly 3 letters (e.g. AAG)",
     "invalid_tech_number": "Number must be exactly 7 digits (e.g. 8534413)",
     "cancel_info_msg": "You can cancel this trip until {time}.",
-    "driver_terms": "Driver Terms of Use"
+    "driver_terms": "Driver Terms of Use",
+    "support_note": "If you have any problems with filling, please contact",
+    "support_link_label": "support"
   },
   "search": {
     "all": "All",
@@ -405,6 +407,7 @@
     "edit_profile": "Edit Profile",
     "settings": "Settings",
     "change_password": "Change Password",
+    "change_password_subtitle": "We'll send a verification code to your phone number to confirm the change.",
     "language": "Language",
     "notifications": "Notifications",
     "about_us": "About Us",
