@@ -512,6 +512,12 @@ class BottomDialog {
     );
   }
 
+  /// Marker id used for a vehicle model the driver typed in themselves,
+  /// i.e. one that isn't in [Defaults.vehicles]. The name is still sent to the
+  /// backend as a plain string, so custom models are accepted just like the
+  /// preset ones.
+  static const int customVehicleId = -1;
+
   static void showSelectCar(
     BuildContext context,
     Function(
@@ -520,6 +526,12 @@ class BottomDialog {
     VehicleModel car,
   ) {
     VehicleModel selectedCar = VehicleModel(id: 0, vehicleName: "");
+    // Re-open straight into custom-entry mode if the caller already holds a
+    // typed-in model, so the driver can edit it instead of losing their text.
+    bool isCustomMode = car.id == customVehicleId;
+    final TextEditingController customController = TextEditingController(
+      text: car.id == customVehicleId ? car.vehicleName : "",
+    );
 
     showModalBottomSheet(
       barrierColor: AppTheme.black.withOpacity(0.45),
@@ -527,164 +539,298 @@ class BottomDialog {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        if (car.id != 0) {
+        if (car.id != 0 && car.id != customVehicleId) {
           selectedCar = car;
         }
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return Container(
-              height: selectedCar.id == 0 ? 524 : 256,
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(24),
-                  topLeft: Radius.circular(24),
-                ),
-                color: Colors.white,
+            final bool showList = selectedCar.id == 0 && !isCustomMode;
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              padding: const EdgeInsets.only(top: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        height: 5,
-                        width: 80,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(5),
-                          color: AppTheme.gray,
+              child: Container(
+                height: isCustomMode
+                    ? 320
+                    : showList
+                        ? 524
+                        : 256,
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(24),
+                    topLeft: Radius.circular(24),
+                  ),
+                  color: Colors.white,
+                ),
+                padding: const EdgeInsets.only(top: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          height: 5,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(5),
+                            color: AppTheme.gray,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text18h500w(
-                        title: translate("profile.select_car_model"),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 270),
-                    curve: Curves.easeInOut,
-                    child: selectedCar.id == 0
-                        ? Expanded(
-                            child: ListView.builder(
-                              itemCount: Defaults().vehicles.length,
-                              padding: const EdgeInsets.only(
-                                  top: 4, bottom: 0, left: 16, right: 16),
-                              itemBuilder: (context, index) {
-                                VehicleModel vehicle =
-                                    Defaults().vehicles[index];
-                                return Column(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          selectedCar = vehicle;
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(16),
-                                        color: AppTheme.light,
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text14h500w(
-                                                title: vehicle.vehicleName,
-                                                color:
-                                                    vehicle.id == selectedCar.id
-                                                        ? AppTheme.purple
-                                                        : AppTheme.black,
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text18h500w(
+                          title: isCustomMode
+                              ? translate("profile.enter_custom_model")
+                              : translate("profile.select_car_model"),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 270),
+                      curve: Curves.easeInOut,
+                      child: isCustomMode
+                          ? Expanded(
+                              child: _buildCustomCarInput(
+                                controller: customController,
+                                onBack: () => setState(() {
+                                  isCustomMode = false;
+                                }),
+                              ),
+                            )
+                          : showList
+                              ? Expanded(
+                                  child: ListView.builder(
+                                    itemCount: Defaults().vehicles.length + 1,
+                                    padding: const EdgeInsets.only(
+                                        top: 4, bottom: 0, left: 16, right: 16),
+                                    itemBuilder: (context, index) {
+                                      // Last row lets the driver type a model
+                                      // that isn't in the preset list.
+                                      if (index == Defaults().vehicles.length) {
+                                        return GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              isCustomMode = true;
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(16),
+                                            color: AppTheme.light,
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.edit_outlined,
+                                                    size: 20,
+                                                    color: AppTheme.purple),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text14h500w(
+                                                    title: translate(
+                                                        "profile.other_car_model"),
+                                                    color: AppTheme.purple,
+                                                  ),
+                                                ),
+                                                const Icon(Icons.chevron_right,
+                                                    size: 20,
+                                                    color: AppTheme.purple),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      VehicleModel vehicle =
+                                          Defaults().vehicles[index];
+                                      return Column(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                selectedCar = vehicle;
+                                              });
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.all(16),
+                                              color: AppTheme.light,
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text14h500w(
+                                                      title: vehicle.vehicleName,
+                                                      color: vehicle.id ==
+                                                              selectedCar.id
+                                                          ? AppTheme.purple
+                                                          : AppTheme.black,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                          Container(
+                                            height: 1,
+                                            color: AppTheme.blue,
+                                            margin: const EdgeInsets.only(
+                                                left: 8, right: 8),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                )
+                              : Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedCar =
+                                            VehicleModel(id: 0, vehicleName: "");
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      margin: const EdgeInsets.only(
+                                        top: 4,
+                                        bottom: 12,
+                                        left: 16,
+                                        right: 16,
+                                      ),
+                                      decoration: BoxDecoration(
+                                          color: AppTheme.light,
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          border: Border.all(
+                                              color: AppTheme.purple)),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text16h500w(
+                                                title: selectedCar.vehicleName),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    Container(
-                                      height: 1,
-                                      color: AppTheme.blue,
-                                      margin: const EdgeInsets.only(
-                                          left: 8, right: 8),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          )
-                        : Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  selectedCar =
-                                      VehicleModel(id: 0, vehicleName: "");
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                margin: const EdgeInsets.only(
-                                  top: 4,
-                                  bottom: 12,
-                                  left: 16,
-                                  right: 16,
+                                  ),
                                 ),
-                                decoration: BoxDecoration(
-                                    color: AppTheme.light,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: AppTheme.purple)),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text16h500w(
-                                          title: selectedCar.vehicleName),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.only(
-                      top: 12,
-                      left: 16,
-                      right: 16,
-                      bottom: 32,
                     ),
-                    child: GestureDetector(
-                      onTap: () {
-                        if (selectedCar.id != 0) {
-                          onChanged(selectedCar);
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: Container(
-                        height: 56,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: AppTheme.purple,
-                          borderRadius: BorderRadius.circular(16),
+                    Container(
+                      padding: const EdgeInsets.only(
+                        top: 12,
+                        left: 16,
+                        right: 16,
+                        bottom: 32,
+                      ),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (isCustomMode) {
+                            final name = customController.text.trim();
+                            if (name.isNotEmpty) {
+                              onChanged(VehicleModel(
+                                  id: customVehicleId, vehicleName: name));
+                              Navigator.pop(context);
+                            }
+                          } else if (selectedCar.id != 0) {
+                            onChanged(selectedCar);
+                            Navigator.pop(context);
+                          }
+                        },
+                        child: Container(
+                          height: 56,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.purple,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Center(
+                              child: Text16h500w(
+                            title: translate("home.apply"),
+                            color: Colors.white,
+                          )),
                         ),
-                        child: Center(
-                            child: Text16h500w(
-                          title: translate("home.apply"),
-                          color: Colors.white,
-                        )),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
         );
       },
+    );
+  }
+
+  static Widget _buildCustomCarInput({
+    required TextEditingController controller,
+    required VoidCallback onBack,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: onBack,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.arrow_back_ios_new,
+                    size: 14, color: AppTheme.purple),
+                const SizedBox(width: 6),
+                Text14h500w(
+                  title: translate("profile.choose_from_list"),
+                  color: AppTheme.purple,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppTheme.light,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.purple),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.directions_car_outlined,
+                    color: AppTheme.purple, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    autofocus: true,
+                    cursorColor: AppTheme.purple,
+                    textCapitalization: TextCapitalization.words,
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.black,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: translate("ketamiz.car_model_hint"),
+                      hintStyle: const TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 14,
+                        color: AppTheme.gray,
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
