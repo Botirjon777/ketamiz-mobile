@@ -22,6 +22,7 @@ import '../../../bloc/profile_bloc.dart';
 import '../../../model/api/get_user_model.dart';
 import '../../../model/settings_model.dart';
 import '../../../resources/repository.dart';
+import '../../../services/push_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/image_helper.dart';
 import '../../../utils/nav_constants.dart';
@@ -721,6 +722,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       translate("profile.logout_confirm"),
       onConfirm: () async {
         Navigator.pop(context); // close the dialog
+        // Stop pushes to this device while the JWT is still valid.
+        await PushNotificationService.instance.unregisterToken();
         // Best-effort server logout; proceed regardless of result.
         try {
           await Repository().fetchLogout();
@@ -744,6 +747,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onConfirm: () async {
         Navigator.pop(context); // close the confirmation dialog
         setState(() => _isDeletingAccount = true);
+
+        // Remove this device's push token while the JWT is still valid.
+        await PushNotificationService.instance.unregisterToken();
 
         final response = await Repository().fetchDeleteAccount();
         if (!mounted) return;

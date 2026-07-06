@@ -1,9 +1,13 @@
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:ketamiz/src/services/push_service.dart';
 import 'package:ketamiz/src/theme/app_theme.dart';
 import 'package:ketamiz/src/ui/splash/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +17,18 @@ final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = AppHttpOverrides();
+
+  // Firebase Cloud Messaging. Native config files (google-services.json /
+  // GoogleService-Info.plist) provide the options, so no args are needed.
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      await PushNotificationService.instance.init();
+    } catch (e) {
+      debugPrint('Firebase init failed: $e');
+    }
+  }
 
   final prefs = await SharedPreferences.getInstance();
   final savedLanguage = prefs.getString('language') ?? 'uz';
@@ -42,6 +58,7 @@ class MyApp extends StatelessWidget {
       state: LocalizationProvider.of(context).state,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        navigatorKey: PushNotificationService.instance.navigatorKey,
         localizationsDelegates: [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,

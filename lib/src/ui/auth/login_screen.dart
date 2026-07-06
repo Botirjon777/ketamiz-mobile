@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../model/api/login_model.dart';
 import '../../model/api/register_model.dart';
 import '../../resources/repository.dart';
+import '../../services/push_service.dart';
 import '../../utils/secure_storage.dart';
 import '../../utils/uz_phone_formatter.dart';
 import '../../theme/app_theme.dart';
@@ -573,6 +574,8 @@ class _LoginScreenState extends State<LoginScreen> {
         });
         if (result.status == "success") {
           await SecureStorage.setToken(result.authorisation.token);
+          // JWT is ready — register this device for push notifications.
+          PushNotificationService.instance.registerToken();
           SharedPreferences prefs = await SharedPreferences.getInstance();
           prefs.setBool("isFirst", false);
           prefs.setString(

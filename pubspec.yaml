@@ -41,6 +41,8 @@ dependencies:
   image: ^4.5.4
   path: ^1.9.1
   open_filex: ^4.5.0
+  firebase_core: ^4.11.0
+  flutter_local_notifications: ^22.0.1
 
 dev_dependencies:
   flutter_test:

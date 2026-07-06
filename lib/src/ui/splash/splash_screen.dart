@@ -4,6 +4,7 @@ import 'package:ketamiz/src/lan_localization/load_places.dart';
 import 'package:ketamiz/src/ui/auth/login_screen.dart';
 import 'package:ketamiz/src/ui/language/language_selection_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/push_service.dart';
 import '../../theme/app_theme.dart';
 import '../menu/main_screen.dart';
 
@@ -96,6 +97,9 @@ class _SplashScreenState extends State<SplashScreen>
     if (!hasLanguage) {
       destination = const LanguageSelectionScreen();
     } else if (isLoggedIn) {
+      // Already authenticated — make sure the FCM token is registered/refreshed
+      // (it may have rotated or permission may have changed since last run).
+      PushNotificationService.instance.registerToken();
       destination = const MainScreen();
     } else {
       destination = const LoginScreen();

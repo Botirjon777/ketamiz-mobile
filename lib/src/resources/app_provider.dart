@@ -332,6 +332,27 @@ class ApiProvider {
     return await postRequest(url, {});
   }
 
+  /// Register / update this device's FCM token so the backend can push to it.
+  /// Requires a valid JWT (auth header is attached automatically).
+  Future<HttpResult> fetchRegisterDeviceToken(
+    String deviceToken,
+    String devicePlatform,
+  ) async {
+    String url = '$baseUrl/device-token';
+    final data = {
+      "device_token": deviceToken,
+      "device_platform": devicePlatform,
+    };
+    return await postRequest(url, data);
+  }
+
+  /// Remove this device's FCM token (call on logout while the JWT is still
+  /// valid). The backend resolves the token from the authenticated user.
+  Future<HttpResult> fetchDeleteDeviceToken() async {
+    String url = '$baseUrl/device-token';
+    return await deleteRequest(url);
+  }
+
   /// Update User Language Post
   Future<HttpResult> fetchUpdateLanguage(String language) async {
     String url = '$baseUrl/auth/update-user-language';

@@ -64,6 +64,15 @@ class Repository {
 
   Future<HttpResult> fetchLogout() => apiProvider.fetchLogout();
 
+  Future<HttpResult> fetchRegisterDeviceToken(
+    String deviceToken,
+    String devicePlatform,
+  ) =>
+      apiProvider.fetchRegisterDeviceToken(deviceToken, devicePlatform);
+
+  Future<HttpResult> fetchDeleteDeviceToken() =>
+      apiProvider.fetchDeleteDeviceToken();
+
   Future<HttpResult> fetchUpdateLanguage(String language) =>
       apiProvider.fetchUpdateLanguage(language);
 
