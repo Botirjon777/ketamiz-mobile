@@ -26,7 +26,11 @@ class PushNotificationService {
   PushNotificationService._();
   static final PushNotificationService instance = PushNotificationService._();
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  // Lazy so that merely constructing this singleton (e.g. to read
+  // [navigatorKey] when building MaterialApp) never touches Firebase. On web —
+  // where Firebase isn't initialised — eagerly calling FirebaseMessaging.instance
+  // throws a FirebaseException that can't cross the JS interop boundary.
+  FirebaseMessaging get _messaging => FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
