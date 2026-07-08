@@ -10,15 +10,17 @@ class DestinationsContainer extends StatelessWidget {
   final TripListModel trip;
 
   String get _fromPlace {
-    final parts =
-        [trip.fromCity, trip.fromRegion].where((s) => s.isNotEmpty).toList();
+    final parts = [trip.fromVillage, trip.fromCity, trip.fromRegion]
+        .where((s) => s.isNotEmpty)
+        .toList();
     if (parts.isNotEmpty) return parts.join(', ');
     return trip.fromWhere;
   }
 
   String get _toPlace {
-    final parts =
-        [trip.toCity, trip.toRegion].where((s) => s.isNotEmpty).toList();
+    final parts = [trip.toVillage, trip.toCity, trip.toRegion]
+        .where((s) => s.isNotEmpty)
+        .toList();
     if (parts.isNotEmpty) return parts.join(', ');
     return trip.toWhere;
   }
@@ -222,13 +224,14 @@ class DestinationsContainer extends StatelessWidget {
                     ),
                     Text(
                       _fromPlace,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppTheme.dark,
                         fontSize: 13,
                         fontFamily: AppTheme.fontFamily,
                         fontWeight: FontWeight.w400,
+                        height: 1.3,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -259,13 +262,14 @@ class DestinationsContainer extends StatelessWidget {
                     ),
                     Text(
                       _toPlace,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppTheme.dark,
                         fontSize: 13,
                         fontFamily: AppTheme.fontFamily,
                         fontWeight: FontWeight.w400,
+                        height: 1.3,
                       ),
                     ),
                   ],
