@@ -11,6 +11,7 @@ import 'package:ketamiz/src/services/push_service.dart';
 import 'package:ketamiz/src/theme/app_theme.dart';
 import 'package:ketamiz/src/ui/splash/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'firebase_options.dart';
 
 final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey();
 
@@ -18,11 +19,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = AppHttpOverrides();
 
-  // Firebase Cloud Messaging. Native config files (google-services.json /
-  // GoogleService-Info.plist) provide the options, so no args are needed.
+  // Firebase Cloud Messaging.
   if (!kIsWeb) {
     try {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
       await PushNotificationService.instance.init();
     } catch (e) {
