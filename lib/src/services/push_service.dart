@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -7,6 +8,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../resources/repository.dart';
 import '../ui/menu/notifications/notifications_screen.dart';
+import '../ui/menu/parcels/parcel_detail_screen.dart';
+import '../ui/menu/parcels/trip_parcels_screen.dart';
 
 /// Handles messages that arrive while the app is in the background or fully
 /// terminated. Must be a top-level (or static) function annotated with
@@ -73,7 +76,13 @@ class PushNotificationService {
           const InitializationSettings(android: androidInit, iOS: iosInit),
       onDidReceiveNotificationResponse: (response) {
         final payload = response.payload;
-        if (payload != null && payload.isNotEmpty) _routeFromType(payload);
+        if (payload == null || payload.isEmpty) return;
+        try {
+          final data = jsonDecode(payload);
+          if (data is Map) {
+            _routeFromData(Map<String, dynamic>.from(data));
+          }
+        } catch (_) {}
       },
     );
 
@@ -87,16 +96,14 @@ class PushNotificationService {
 
     // App in background, brought to front by tapping the notification.
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      final type = message.data['type'];
-      if (type != null) _routeFromType(type.toString());
+      _routeFromData(message.data);
     });
 
     // App was terminated and launched by tapping the notification.
     final initialMessage = await _messaging.getInitialMessage();
-    final initialType = initialMessage?.data['type'];
-    if (initialType != null) {
+    if (initialMessage != null && initialMessage.data.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _routeFromType(initialType.toString()),
+        (_) => _routeFromData(initialMessage.data),
       );
     }
   }
@@ -167,15 +174,47 @@ class PushNotificationService {
         ),
         iOS: const DarwinNotificationDetails(),
       ),
-      payload: message.data['type']?.toString(),
+      // Carry the whole data map so a tap can deep-link by event.
+      payload: message.data.isEmpty ? null : jsonEncode(message.data),
     );
   }
 
-  /// Routes a tapped notification. Every type currently opens the notifications
-  /// screen; extend here for deep-links (e.g. `broadcast` → a specific item).
-  void _routeFromType(String type) {
+  /// Routes a tapped notification by its `data` payload. Parcel events deep-link
+  /// to the relevant parcel/trip screen (see the event table in
+  /// parcel-and-push.md); anything else falls back to the notifications screen.
+  void _routeFromData(Map<String, dynamic> data) {
     final navigator = navigatorKey.currentState;
     if (navigator == null) return;
+
+    final event = data['event']?.toString() ?? '';
+    final parcelBookingId =
+        int.tryParse(data['parcel_booking_id']?.toString() ?? '');
+    final tripId = int.tryParse(data['trip_id']?.toString() ?? '');
+
+    switch (event) {
+      // Driver-facing parcel events → the trip's received parcels.
+      case 'parcel.new':
+      case 'parcel.cancelled_by_client':
+      case 'parcel.cancelled_by_admin_driver':
+        if (tripId != null) {
+          navigator.push(MaterialPageRoute(
+              builder: (_) => TripParcelsScreen(tripId: tripId)));
+          return;
+        }
+        break;
+      // Client-facing parcel events → the parcel booking detail.
+      case 'parcel.cancelled_by_admin':
+      case 'parcel.disabled':
+        if (parcelBookingId != null) {
+          navigator.push(MaterialPageRoute(
+              builder: (_) =>
+                  ParcelDetailScreen(bookingId: parcelBookingId)));
+          return;
+        }
+        break;
+    }
+
+    // Booking/trip events and broadcasts: land on the notifications feed.
     navigator.push(
       MaterialPageRoute(builder: (_) => const NotificationsScreen()),
     );
