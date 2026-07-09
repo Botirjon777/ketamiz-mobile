@@ -192,6 +192,8 @@
     "notifications": "Уведомления",
     "no_notifications": "Пока нет уведомлений",
     "no_notifications_msg": "Здесь появятся новые уведомления.",
+    "notifications_error": "Не удалось загрузить уведомления",
+    "retry": "Повторить",
     "current_balance": "Текущий баланс",
     "select_payment_card": "Выберите карту для оплаты",
     "main_card": "Основная карта",

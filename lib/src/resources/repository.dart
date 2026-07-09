@@ -73,6 +73,10 @@ class Repository {
   Future<HttpResult> fetchDeleteDeviceToken() =>
       apiProvider.fetchDeleteDeviceToken();
 
+  Future<HttpResult> fetchBroadcasts() => apiProvider.fetchBroadcasts();
+
+  Future<HttpResult> fetchBroadcast(int id) => apiProvider.fetchBroadcast(id);
+
   Future<HttpResult> fetchUpdateLanguage(String language) =>
       apiProvider.fetchUpdateLanguage(language);
 

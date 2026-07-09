@@ -192,6 +192,8 @@
     "notifications": "Bildirishnomalar",
     "no_notifications": "Hozircha bildirishnomalar yo'q",
     "no_notifications_msg": "Yangiliklar paydo bo'lganda shu yerda ko'rinadi.",
+    "notifications_error": "Bildirishnomalarni yuklab bo'lmadi",
+    "retry": "Qayta urinish",
     "current_balance": "Joriy balans",
     "select_payment_card": "To'lov kartasini tanlang",
     "main_card": "Asosiy karta",

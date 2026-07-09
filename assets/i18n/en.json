@@ -192,6 +192,8 @@
     "notifications": "Notifications",
     "no_notifications": "No notifications yet",
     "no_notifications_msg": "New updates will appear here.",
+    "notifications_error": "Couldn't load notifications",
+    "retry": "Retry",
     "current_balance": "Current balance",
     "select_payment_card": "Select payment card",
     "main_card": "Main card",

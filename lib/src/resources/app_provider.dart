@@ -383,6 +383,16 @@ class ApiProvider {
     return await getRequest(url);
   }
 
+  /// Get all broadcast messages (notifications) for the current user.
+  Future<HttpResult> fetchBroadcasts() async {
+    return await getRequest('$baseUrl/broadcasts');
+  }
+
+  /// Get a single broadcast message by id.
+  Future<HttpResult> fetchBroadcast(int id) async {
+    return await getRequest('$baseUrl/broadcasts/$id');
+  }
+
   /// Get all regions (bare JSON array: [{id, name_uz, name_ru, name_en}])
   Future<HttpResult> fetchRegions() async {
     return await getRequest('$baseUrl/regions');
