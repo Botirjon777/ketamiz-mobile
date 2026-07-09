@@ -393,6 +393,65 @@ class ApiProvider {
     return await getRequest('$baseUrl/broadcasts/$id');
   }
 
+  // ── Parcels (posilka) ─────────────────────────────────────────────────────
+
+  /// Parcel types for the send-parcel form.
+  Future<HttpResult> fetchParcelTypes() async {
+    return await getRequest('$baseUrl/parcel-types');
+  }
+
+  /// Client: create a parcel booking on a trip. Optional dimensions/description
+  /// are omitted when not provided so backend validation passes.
+  Future<HttpResult> fetchCreateParcelBooking({
+    required int tripId,
+    required int parcelTypeId,
+    required double weight,
+    required String receiverPhone,
+    int? length,
+    int? width,
+    int? height,
+    String? description,
+  }) async {
+    String url = '$baseUrl/client/parcel-bookings';
+    final data = <String, dynamic>{
+      "trip_id": tripId,
+      "parcel_type_id": parcelTypeId,
+      "weight": weight,
+      "receiver_phone": receiverPhone,
+      if (length != null) "length": length,
+      if (width != null) "width": width,
+      if (height != null) "height": height,
+      if (description != null && description.trim().isNotEmpty)
+        "parcel_description": description.trim(),
+    };
+    return await postRequest(url, data);
+  }
+
+  /// Client: my sent parcels (paginated).
+  Future<HttpResult> fetchClientParcelBookings() async {
+    return await getRequest('$baseUrl/client/parcel-bookings');
+  }
+
+  /// Client: a single parcel booking.
+  Future<HttpResult> fetchClientParcelBooking(int id) async {
+    return await getRequest('$baseUrl/client/parcel-bookings/$id');
+  }
+
+  /// Client: cancel my parcel (full refund when it was confirmed).
+  Future<HttpResult> fetchCancelParcelBooking(int id) async {
+    return await deleteRequest('$baseUrl/client/parcel-bookings/$id/cancel');
+  }
+
+  /// Driver: all parcels received across my trips.
+  Future<HttpResult> fetchDriverParcelBookings() async {
+    return await getRequest('$baseUrl/driver/parcel-bookings');
+  }
+
+  /// Driver: parcels received for a specific trip.
+  Future<HttpResult> fetchDriverParcelBookingsByTrip(int tripId) async {
+    return await getRequest('$baseUrl/driver/parcel-bookings/trip/$tripId');
+  }
+
   /// Get all regions (bare JSON array: [{id, name_uz, name_ru, name_en}])
   Future<HttpResult> fetchRegions() async {
     return await getRequest('$baseUrl/regions');

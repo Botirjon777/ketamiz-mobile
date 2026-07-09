@@ -77,6 +77,46 @@ class Repository {
 
   Future<HttpResult> fetchBroadcast(int id) => apiProvider.fetchBroadcast(id);
 
+  // ── Parcels ────────────────────────────────────────────────────────────────
+
+  Future<HttpResult> fetchParcelTypes() => apiProvider.fetchParcelTypes();
+
+  Future<HttpResult> fetchCreateParcelBooking({
+    required int tripId,
+    required int parcelTypeId,
+    required double weight,
+    required String receiverPhone,
+    int? length,
+    int? width,
+    int? height,
+    String? description,
+  }) =>
+      apiProvider.fetchCreateParcelBooking(
+        tripId: tripId,
+        parcelTypeId: parcelTypeId,
+        weight: weight,
+        receiverPhone: receiverPhone,
+        length: length,
+        width: width,
+        height: height,
+        description: description,
+      );
+
+  Future<HttpResult> fetchClientParcelBookings() =>
+      apiProvider.fetchClientParcelBookings();
+
+  Future<HttpResult> fetchClientParcelBooking(int id) =>
+      apiProvider.fetchClientParcelBooking(id);
+
+  Future<HttpResult> fetchCancelParcelBooking(int id) =>
+      apiProvider.fetchCancelParcelBooking(id);
+
+  Future<HttpResult> fetchDriverParcelBookings() =>
+      apiProvider.fetchDriverParcelBookings();
+
+  Future<HttpResult> fetchDriverParcelBookingsByTrip(int tripId) =>
+      apiProvider.fetchDriverParcelBookingsByTrip(tripId);
+
   Future<HttpResult> fetchUpdateLanguage(String language) =>
       apiProvider.fetchUpdateLanguage(language);
 
