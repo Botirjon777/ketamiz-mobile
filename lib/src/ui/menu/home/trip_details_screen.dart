@@ -7,6 +7,7 @@ import 'package:ketamiz/src/ui/menu/home/map_single_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/payment_screen.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/map_select_screen.dart';
 import 'package:ketamiz/src/ui/menu/main_screen.dart';
+import 'package:ketamiz/src/ui/menu/parcels/send_parcel_screen.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/containers/passengers_container.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
@@ -532,6 +533,16 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                   _buildCancelInfoCard(),
                   const SizedBox(height: 12),
                   _buildDriverTermsButton(),
+                ],
+                // Send-parcel entry: client view, active trip that accepts
+                // parcels, and not the viewer's own trip.
+                if (!widget.isDriver &&
+                    _isActive &&
+                    !_isOwnTrip &&
+                    widget.trip.acceptsParcels &&
+                    widget.trip.parcel != null) ...[
+                  const SizedBox(height: 16),
+                  _buildSendParcelCard(),
                 ],
                 // Passenger form exists only for booking: active trip,
                 // client view, and not the viewer's own trip.
@@ -1141,6 +1152,73 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
         builder: (_) => MapSingleScreen(
           location: LatLng(double.parse(p.lat), double.parse(p.lng)),
           place: p.name.isEmpty ? translate("home.pickup_location") : p.name,
+        ),
+      ),
+    );
+  }
+
+  // ── Send parcel entry (client view) ────────────────────────────────────────
+  Widget _buildSendParcelCard() {
+    final parcel = widget.trip.parcel!;
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SendParcelScreen(trip: widget.trip),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.purple.withValues(alpha: 0.3)),
+          boxShadow: [
+            BoxShadow(
+              offset: const Offset(0, 4),
+              blurRadius: 16,
+              color: AppTheme.black.withValues(alpha: 0.06),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.purple.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.inventory_2_outlined,
+                  color: AppTheme.purple, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text16h500w(title: translate("parcel.send_parcel")),
+                  const SizedBox(height: 2),
+                  Text(
+                    translate("parcel.send_parcel_subtitle", args: {
+                      "price":
+                          "${Utils.priceFromNum(parcel.pricePerKg)} ${translate("currency")}",
+                    }),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 12.5,
+                      color: AppTheme.gray,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppTheme.purple, size: 22),
+          ],
         ),
       ),
     );

@@ -15,6 +15,7 @@ import 'package:ketamiz/src/ui/menu/new_ketamiz/create_new_ketamiz_screen.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/app_dropdown.dart';
 import 'package:ketamiz/src/utils/nav_constants.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
+import 'package:ketamiz/src/ui/menu/parcels/my_parcels_view.dart';
 import 'package:ketamiz/src/ui/widgets/containers/destinations_container.dart';
 import 'package:ketamiz/src/ui/widgets/containers/history_container.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
@@ -33,6 +34,13 @@ class _TripsScreenState extends State<TripsScreen> {
   bool _asDriver = false;
   // 0=All, 1=InProgress, 2=Completed, 3=Canceled
   int _filterIndex = 0;
+  // Client sub-tab: 0=Trips (bookings), 1=Parcels.
+  int _clientTab = 0;
+
+  /// Top padding for the client lists so content clears the overlay header.
+  /// The header is taller on the Trips sub-tab (it also shows the status
+  /// filter, which doesn't apply to parcels).
+  double get _clientTopPad => _clientTab == 0 ? 200 : 150;
 
   bool _isDocsAdded = false;
   bool _isDocsVerified = false;
@@ -161,35 +169,87 @@ class _TripsScreenState extends State<TripsScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: AppDropdown<int>(
-            value: _filterIndex,
-            onChanged: _selectFilter,
-            items: [
-              AppDropdownItem(
-                value: 0,
-                label: translate('history.all'),
-                color: AppTheme.gray,
+        // Client-only sub-tabs: their trips (bookings) vs. their parcels.
+        if (!_asDriver) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildClientTabs(),
+          ),
+          const SizedBox(height: 8),
+        ],
+        // Status filter applies to trips only (driver trips, or client bookings).
+        if (_asDriver || _clientTab == 0)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: AppDropdown<int>(
+              value: _filterIndex,
+              onChanged: _selectFilter,
+              items: [
+                AppDropdownItem(
+                  value: 0,
+                  label: translate('history.all'),
+                  color: AppTheme.gray,
+                ),
+                AppDropdownItem(
+                  value: 1,
+                  label: translate('history.in_progress'),
+                  color: AppTheme.purple,
+                ),
+                AppDropdownItem(
+                  value: 2,
+                  label: translate('history.completed'),
+                  color: const Color(0xFF4CAF50),
+                ),
+                AppDropdownItem(
+                  value: 3,
+                  label: translate('history.canceled'),
+                  color: const Color(0xFFE53935),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildClientTabs() {
+    Widget tab(int index, String label) {
+      final active = _clientTab == index;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () {
+            if (_clientTab == index) return;
+            setState(() => _clientTab = index);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            decoration: BoxDecoration(
+              color: active ? AppTheme.purple : AppTheme.light,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: active ? AppTheme.purple : AppTheme.border,
               ),
-              AppDropdownItem(
-                value: 1,
-                label: translate('history.in_progress'),
-                color: AppTheme.purple,
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: active ? Colors.white : AppTheme.dark,
               ),
-              AppDropdownItem(
-                value: 2,
-                label: translate('history.completed'),
-                color: const Color(0xFF4CAF50),
-              ),
-              AppDropdownItem(
-                value: 3,
-                label: translate('history.canceled'),
-                color: const Color(0xFFE53935),
-              ),
-            ],
+            ),
           ),
         ),
+      );
+    }
+
+    return Row(
+      children: [
+        tab(0, translate('history.my_trips')),
+        const SizedBox(width: 8),
+        tab(1, translate('parcel.my_parcels')),
       ],
     );
   }
@@ -221,6 +281,10 @@ class _TripsScreenState extends State<TripsScreen> {
   // ── Client content ────────────────────────────────────────────────────────
 
   Widget _buildClientContent() {
+    // Parcels sub-tab has its own fetch/state, independent of the trip streams.
+    if (_clientTab == 1) {
+      return MyParcelsView(topPadding: _clientTopPad);
+    }
     return RefreshIndicator(
       color: AppTheme.black,
       onRefresh: _onRefresh,
@@ -243,8 +307,8 @@ class _TripsScreenState extends State<TripsScreen> {
               final bookings = snap.data!;
               if (bookings.isEmpty) return _buildClientEmpty();
               return ListView.builder(
-                padding: const EdgeInsets.only(
-                  top: 140,
+                padding: EdgeInsets.only(
+                  top: _clientTopPad,
                   bottom: kNavBarTotalPadding,
                   left: 16,
                   right: 16,
@@ -280,7 +344,7 @@ class _TripsScreenState extends State<TripsScreen> {
 
   Widget _buildClientEmpty() {
     return ListView(
-      padding: const EdgeInsets.only(top: 140),
+      padding: EdgeInsets.only(top: _clientTopPad),
       children: [
         SizedBox(
           height: MediaQuery.of(context).size.height - 300,

@@ -147,6 +147,18 @@ class Utils {
     return '${time.day} $month ${time.hour}:${time.minute}';
   }
 
+  /// Money from a numeric value: grouped thousands, no decimals.
+  static String priceFromNum(num value) => priceFormat(value.round().toString());
+
+  /// Weight/dimension: whole numbers show without a decimal, fractional values
+  /// keep up to one decimal place (e.g. 18 → "18", 18.5 → "18.5").
+  static String weightFormat(num value) {
+    if (value == value.roundToDouble()) return value.toInt().toString();
+    return value
+        .toStringAsFixed(1)
+        .replaceAll(RegExp(r'\.0$'), '');
+  }
+
   static String priceFormat(String price) {
     String priceResult = '';
     if(price.contains('.')){
