@@ -8,6 +8,7 @@ import 'package:ketamiz/src/ui/menu/home/payment_screen.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/map_select_screen.dart';
 import 'package:ketamiz/src/ui/menu/main_screen.dart';
 import 'package:ketamiz/src/ui/menu/parcels/send_parcel_screen.dart';
+import 'package:ketamiz/src/ui/menu/parcels/trip_parcels_screen.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/containers/passengers_container.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
@@ -529,6 +530,10 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 if (widget.isDriver) ...[
                   const SizedBox(height: 16),
                   _buildBookedPassengersCard(),
+                  if (widget.trip.acceptsParcels) ...[
+                    const SizedBox(height: 16),
+                    _buildViewParcelsButton(),
+                  ],
                   const SizedBox(height: 16),
                   _buildCancelInfoCard(),
                   const SizedBox(height: 12),
@@ -1471,6 +1476,40 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildViewParcelsButton() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TripParcelsScreen(tripId: widget.trip.id),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppTheme.purple.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.purple.withValues(alpha: 0.18)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.inventory_2_outlined,
+                color: AppTheme.purple, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text16h500w(title: translate("parcel.trip_parcels")),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppTheme.purple, size: 22),
+          ],
+        ),
       ),
     );
   }

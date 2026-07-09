@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 
 import '../../../model/api/parcel_model.dart';
+import '../../../model/event_bus/http_result.dart';
 import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/nav_constants.dart';
@@ -9,13 +10,26 @@ import '../../widgets/texts/text_14h_400w.dart';
 import 'parcel_booking_tile.dart';
 import 'parcel_detail_screen.dart';
 
-/// Client's "My parcels" list, embedded inside the Trips/Orders tab. Fetches
-/// `GET /client/parcel-bookings` with loading / empty / error states and
-/// pull-to-refresh. [topPadding] clears the tab's overlay header.
+/// Parcels list embedded inside the Trips/Orders tab. For the client it shows
+/// their sent parcels (`GET /client/parcel-bookings`); for the driver, parcels
+/// received across their trips (`GET /driver/parcel-bookings`). Has loading /
+/// empty / error states and pull-to-refresh; [topPadding] clears the tab's
+/// overlay header.
 class MyParcelsView extends StatefulWidget {
-  const MyParcelsView({super.key, this.topPadding = 140});
+  const MyParcelsView({
+    super.key,
+    this.topPadding = 140,
+    this.driver = false,
+    this.tripId,
+  });
 
   final double topPadding;
+
+  /// Driver view: fetches received parcels and opens details read-only.
+  final bool driver;
+
+  /// When set (driver view), lists parcels for this trip only.
+  final int? tripId;
 
   @override
   State<MyParcelsView> createState() => _MyParcelsViewState();
@@ -41,7 +55,14 @@ class _MyParcelsViewState extends State<MyParcelsView> {
         _hasError = false;
       });
     }
-    final response = await _repository.fetchClientParcelBookings();
+    final HttpResult response;
+    if (widget.driver) {
+      response = widget.tripId != null
+          ? await _repository.fetchDriverParcelBookingsByTrip(widget.tripId!)
+          : await _repository.fetchDriverParcelBookings();
+    } else {
+      response = await _repository.fetchClientParcelBookings();
+    }
     if (!mounted) return;
     if (response.isSuccess) {
       setState(() {
@@ -152,6 +173,7 @@ class _MyParcelsViewState extends State<MyParcelsView> {
               builder: (_) => ParcelDetailScreen(
                 bookingId: _items[i].id,
                 initial: _items[i],
+                isDriver: widget.driver,
               ),
             ),
           );

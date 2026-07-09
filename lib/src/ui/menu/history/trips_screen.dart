@@ -34,13 +34,18 @@ class _TripsScreenState extends State<TripsScreen> {
   bool _asDriver = false;
   // 0=All, 1=InProgress, 2=Completed, 3=Canceled
   int _filterIndex = 0;
-  // Client sub-tab: 0=Trips (bookings), 1=Parcels.
-  int _clientTab = 0;
+  // Sub-tab within a role: 0=Trips (bookings/driver trips), 1=Parcels.
+  int _subTab = 0;
 
-  /// Top padding for the client lists so content clears the overlay header.
-  /// The header is taller on the Trips sub-tab (it also shows the status
-  /// filter, which doesn't apply to parcels).
-  double get _clientTopPad => _clientTab == 0 ? 200 : 150;
+  /// Sub-tabs (Trips | Parcels) show for clients always, and for drivers once
+  /// their documents are verified (otherwise the docs/pending state is shown).
+  bool get _showSubTabs => !_asDriver || _isDocsVerified;
+
+  /// Top padding so list content clears the overlay header. Taller when the
+  /// sub-tabs are shown, and taller still on the Trips sub-tab (which also
+  /// shows the status filter — it doesn't apply to parcels).
+  double get _topPad =>
+      _showSubTabs ? (_subTab == 0 ? 200 : 150) : 140;
 
   bool _isDocsAdded = false;
   bool _isDocsVerified = false;
@@ -94,6 +99,7 @@ class _TripsScreenState extends State<TripsScreen> {
     setState(() {
       _asDriver = asDriver;
       _filterIndex = 0;
+      _subTab = 0;
     });
     _fetch();
   }
@@ -127,7 +133,7 @@ class _TripsScreenState extends State<TripsScreen> {
             else
               _buildClientContent(),
             _buildHeader(),
-            if (_asDriver) _buildCreateTripButton(),
+            if (_asDriver && _subTab == 0) _buildCreateTripButton(),
           ],
         ),
       ),
@@ -169,16 +175,16 @@ class _TripsScreenState extends State<TripsScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        // Client-only sub-tabs: their trips (bookings) vs. their parcels.
-        if (!_asDriver) ...[
+        // Sub-tabs: trips (bookings/driver trips) vs. parcels.
+        if (_showSubTabs) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildClientTabs(),
+            child: _buildSubTabs(),
           ),
           const SizedBox(height: 8),
         ],
-        // Status filter applies to trips only (driver trips, or client bookings).
-        if (_asDriver || _clientTab == 0)
+        // Status filter applies to the trips sub-tab only.
+        if (_subTab == 0)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: AppDropdown<int>(
@@ -212,14 +218,14 @@ class _TripsScreenState extends State<TripsScreen> {
     );
   }
 
-  Widget _buildClientTabs() {
+  Widget _buildSubTabs() {
     Widget tab(int index, String label) {
-      final active = _clientTab == index;
+      final active = _subTab == index;
       return Expanded(
         child: GestureDetector(
           onTap: () {
-            if (_clientTab == index) return;
-            setState(() => _clientTab = index);
+            if (_subTab == index) return;
+            setState(() => _subTab = index);
           },
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 9),
@@ -282,8 +288,8 @@ class _TripsScreenState extends State<TripsScreen> {
 
   Widget _buildClientContent() {
     // Parcels sub-tab has its own fetch/state, independent of the trip streams.
-    if (_clientTab == 1) {
-      return MyParcelsView(topPadding: _clientTopPad);
+    if (_subTab == 1) {
+      return MyParcelsView(topPadding: _topPad);
     }
     return RefreshIndicator(
       color: AppTheme.black,
@@ -308,7 +314,7 @@ class _TripsScreenState extends State<TripsScreen> {
               if (bookings.isEmpty) return _buildClientEmpty();
               return ListView.builder(
                 padding: EdgeInsets.only(
-                  top: _clientTopPad,
+                  top: _topPad,
                   bottom: kNavBarTotalPadding,
                   left: 16,
                   right: 16,
@@ -344,7 +350,7 @@ class _TripsScreenState extends State<TripsScreen> {
 
   Widget _buildClientEmpty() {
     return ListView(
-      padding: EdgeInsets.only(top: _clientTopPad),
+      padding: EdgeInsets.only(top: _topPad),
       children: [
         SizedBox(
           height: MediaQuery.of(context).size.height - 300,
@@ -371,6 +377,11 @@ class _TripsScreenState extends State<TripsScreen> {
     if (!_isDocsAdded && !_isDocsVerified) return _buildAddDocsState();
     if (!_isDocsVerified) return _buildVerificationPendingState();
 
+    // Parcels sub-tab: parcels received across the driver's trips.
+    if (_subTab == 1) {
+      return MyParcelsView(driver: true, topPadding: _topPad);
+    }
+
     return RefreshIndicator(
       color: AppTheme.purple,
       onRefresh: _onRefresh,
@@ -382,8 +393,8 @@ class _TripsScreenState extends State<TripsScreen> {
           if (trips.isEmpty) return _buildDriverEmpty();
           return ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(
-              top: 140,
+            padding: EdgeInsets.only(
+              top: _topPad,
               bottom: kNavBarTotalPadding,
               left: 24,
               right: 24,
@@ -479,7 +490,7 @@ class _TripsScreenState extends State<TripsScreen> {
 
   Widget _buildDriverEmpty() {
     return ListView(
-      padding: const EdgeInsets.only(top: 140),
+      padding: EdgeInsets.only(top: _topPad),
       children: [
         SizedBox(
           height: MediaQuery.of(context).size.height -
@@ -549,11 +560,11 @@ class _TripsScreenState extends State<TripsScreen> {
       child: ListView.builder(
         itemCount: 6,
         shrinkWrap: true,
-        padding: const EdgeInsets.only(
+        padding: EdgeInsets.only(
           left: 24,
           right: 24,
           bottom: kNavBarTotalPadding,
-          top: 140,
+          top: _topPad,
         ),
         itemBuilder: (context, i) => Column(
           children: [

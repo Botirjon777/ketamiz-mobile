@@ -922,10 +922,17 @@ class ApiProvider {
       String startQuarterId,
       String endRegionId,
       String endDistrictId,
-      String endQuarterId,
-      ) async {
+      String endQuarterId, {
+      bool acceptsParcels = false,
+      double? parcelMaxWeight,
+      double? parcelPricePerKg,
+      int? parcelMaxLength,
+      int? parcelMaxWidth,
+      int? parcelMaxHeight,
+      List<int> parcelTypeIds = const [],
+      }) async {
     String url = '$baseUrl/driver/trips';
-    final data = {
+    final data = <String, dynamic>{
       "vehicle_id": vehicleId,
       "start_time": _formatBackendDateTime(startDate),
       "end_time": _formatBackendDateTime(endDate),
@@ -941,7 +948,18 @@ class ApiProvider {
       "start_long": startLong,
       "end_lat": endLat,
       "end_long": endLong,
+      "accepts_parcels": acceptsParcels,
     };
+    if (acceptsParcels) {
+      data["parcel"] = {
+        "max_weight": parcelMaxWeight,
+        "price_per_kg": parcelPricePerKg,
+        if (parcelMaxLength != null) "max_length": parcelMaxLength,
+        if (parcelMaxWidth != null) "max_width": parcelMaxWidth,
+        if (parcelMaxHeight != null) "max_height": parcelMaxHeight,
+        "type_ids": parcelTypeIds,
+      };
+    }
     return await postRequest(url, data);
   }
 

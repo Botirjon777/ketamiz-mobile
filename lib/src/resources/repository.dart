@@ -248,8 +248,15 @@ class Repository {
     String startQuarterId,
     String endRegionId,
     String endDistrictId,
-    String endQuarterId,
-  ) =>
+    String endQuarterId, {
+    bool acceptsParcels = false,
+    double? parcelMaxWeight,
+    double? parcelPricePerKg,
+    int? parcelMaxLength,
+    int? parcelMaxWidth,
+    int? parcelMaxHeight,
+    List<int> parcelTypeIds = const [],
+  }) =>
       apiProvider.fetchCreateTrip(
         vehicleId,
         startDate,
@@ -266,6 +273,13 @@ class Repository {
         endRegionId,
         endDistrictId,
         endQuarterId,
+        acceptsParcels: acceptsParcels,
+        parcelMaxWeight: parcelMaxWeight,
+        parcelPricePerKg: parcelPricePerKg,
+        parcelMaxLength: parcelMaxLength,
+        parcelMaxWidth: parcelMaxWidth,
+        parcelMaxHeight: parcelMaxHeight,
+        parcelTypeIds: parcelTypeIds,
       );
 
   Future<HttpResult> fetchOneDriverTrip(String tripId) =>
