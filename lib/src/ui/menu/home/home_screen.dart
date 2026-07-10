@@ -8,6 +8,7 @@ import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/menu/home/all_trips_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/search_result_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/trip_details_screen.dart';
+import 'package:ketamiz/src/ui/menu/profile/support_screen.dart';
 import 'package:ketamiz/src/ui/widgets/containers/active_trips_container.dart';
 import 'package:ketamiz/src/utils/nav_constants.dart';
 import 'package:ketamiz/src/utils/utils.dart';
@@ -46,6 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   DateTime departureDate = DateTime.now();
   int passengerCount = 1;
+
+  /// When on, the search only returns trips that accept parcels.
+  bool _sendingParcel = false;
 
   int notificationNumber = 0;
 
@@ -352,6 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           isRoundTrip: false,
           requiredSeats: passengerCount,
+          parcelOnly: _sendingParcel,
         ),
       ),
     );
@@ -388,6 +393,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 children: [
                   _buildSearchCard(),
+                  const SizedBox(height: 16),
+                  _buildQuickActions(),
                   const SizedBox(height: 24),
                   if (activeBookedId != "0") _buildActiveTrip(),
                   _buildRecommendedTrips(),
@@ -448,31 +455,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       hint: translate("home.from"),
                       value: _fromText,
                       onTap: _pickFrom,
-                      leading: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          border:
-                              Border.all(color: AppTheme.purple, width: 2),
-                        ),
-                      ),
+                      leading: _locationBadge(AppTheme.green),
                     ),
                     Container(
                       height: 1,
-                      margin: const EdgeInsets.only(left: 44, right: 16),
+                      margin: const EdgeInsets.only(left: 58, right: 16),
                       color: AppTheme.border,
                     ),
                     _locationField(
                       hint: translate("home.to"),
                       value: _toText,
                       onTap: _pickTo,
-                      leading: const Icon(
-                        Icons.location_on_rounded,
-                        color: AppTheme.purple,
-                        size: 16,
-                      ),
+                      leading: _locationBadge(AppTheme.blue),
                     ),
                   ],
                 ),
@@ -539,19 +533,30 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          // ── Sending-parcel toggle (filters to trips accepting parcels) ────
+          _buildParcelToggle(),
           const SizedBox(height: 16),
-          // ── Search button ────────────────────────────────────────────────
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _search,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.purple,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(26),
+          // ── Search button (gradient) ─────────────────────────────────────
+          GestureDetector(
+            onTap: _search,
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [AppTheme.blue, AppTheme.green],
                 ),
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: [
+                  BoxShadow(
+                    offset: const Offset(0, 6),
+                    blurRadius: 16,
+                    color: AppTheme.blue.withOpacity(0.25),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -577,6 +582,81 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildParcelToggle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _sendingParcel ? AppTheme.green : AppTheme.border,
+        ),
+        color: _sendingParcel
+            ? AppTheme.green.withOpacity(0.06)
+            : Colors.white,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppTheme.green.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.inventory_2_outlined,
+                color: AppTheme.green, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  translate("home.sending_parcel"),
+                  style: const TextStyle(
+                    color: AppTheme.black,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: AppTheme.fontFamily,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  translate("home.sending_parcel_hint"),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.gray,
+                    fontSize: 11.5,
+                    fontFamily: AppTheme.fontFamily,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: _sendingParcel,
+            activeTrackColor: AppTheme.green,
+            onChanged: (v) => setState(() => _sendingParcel = v),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Circular colour-coded pin used for the From (green) / To (blue) fields.
+  Widget _locationBadge(Color color) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(Icons.location_on_rounded, color: color, size: 18),
+    );
+  }
+
   Widget _locationField({
     required String hint,
     required String value,
@@ -587,10 +667,10 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            SizedBox(width: 16, child: Center(child: leading)),
+            leading,
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -644,6 +724,125 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 20,
+            color: AppTheme.black.withOpacity(0.05),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _quickAction(
+            icon: Icons.directions_car_outlined,
+            color: AppTheme.purple,
+            title: translate("home.action_offer_trip"),
+            subtitle: translate("home.action_offer_trip_sub"),
+            onTap: _comingSoon,
+          ),
+          _quickAction(
+            icon: Icons.inventory_2_outlined,
+            color: AppTheme.green,
+            title: translate("home.action_send_parcel"),
+            subtitle: translate("home.action_send_parcel_sub"),
+            onTap: _comingSoon,
+          ),
+          _quickAction(
+            icon: Icons.local_offer_outlined,
+            color: AppTheme.purple,
+            title: translate("home.action_discounts"),
+            subtitle: translate("home.action_discounts_sub"),
+            onTap: _comingSoon,
+          ),
+          _quickAction(
+            icon: Icons.headset_mic_outlined,
+            color: AppTheme.blue,
+            title: translate("home.action_support"),
+            subtitle: translate("home.action_support_sub"),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SupportScreen()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickAction({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Column(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppTheme.black,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppTheme.gray,
+                  fontSize: 9.5,
+                  height: 1.1,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _comingSoon() {
+    CenterDialog.showInfo(
+      context,
+      translate("home.coming_soon"),
+      translate("home.coming_soon_msg"),
     );
   }
 

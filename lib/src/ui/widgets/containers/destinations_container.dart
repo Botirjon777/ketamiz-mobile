@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import '../../../model/api/trip_list_model.dart';
 import '../../../theme/app_theme.dart';
@@ -281,16 +282,18 @@ class DestinationsContainer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 84,
+                    height: 52,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
                     decoration: BoxDecoration(
-                      color: AppTheme.purple.withOpacity(0.1),
-                      shape: BoxShape.circle,
+                      color: AppTheme.light,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
-                      Icons.directions_car_rounded,
-                      color: AppTheme.purple,
-                      size: 24,
+                    child: SvgPicture.asset(
+                      'assets/icons/car.svg',
+                      fit: BoxFit.contain,
+                      colorFilter: ColorFilter.mode(
+                          AppTheme.dark.withOpacity(0.75), BlendMode.srcIn),
                     ),
                   ),
                   if (trip.vehicle.model.isNotEmpty) ...[
@@ -347,6 +350,60 @@ class DestinationsContainer extends StatelessWidget {
                 ],
               ),
             ],
+          ),
+          if (trip.acceptsParcels && trip.parcel != null) ...[
+            const SizedBox(height: 12),
+            _buildParcelStrip(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Green strip advertising the parcel price for this trip — the cost to send
+  /// up to 5 kg (price/kg × 5), matching the driver's configured rate.
+  Widget _buildParcelStrip() {
+    final price = trip.parcel!.pricePerKg * 5;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.green.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.inventory_2_outlined,
+              color: AppTheme.green, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              translate("home.parcel_price"),
+              style: const TextStyle(
+                color: AppTheme.gray,
+                fontSize: 12,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          Text(
+            "${Utils.priceFromNum(price)} ${translate("currency")}",
+            style: const TextStyle(
+              color: AppTheme.green,
+              fontSize: 13.5,
+              fontFamily: AppTheme.fontFamily,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            translate("home.parcel_price_upto"),
+            style: const TextStyle(
+              color: AppTheme.gray,
+              fontSize: 11,
+              fontFamily: AppTheme.fontFamily,
+            ),
           ),
         ],
       ),

@@ -57,8 +57,9 @@ class HomeBloc {
     String toQuarterId,
     DateTime departureDate,
     DateTime? returnDate,
-    bool? isRoundTrip,
-  ) async {
+    bool? isRoundTrip, {
+    bool acceptsParcels = false,
+  }) async {
     try {
       var response = await _repository.fetchTripSearch(
         fromRegionId,
@@ -70,6 +71,7 @@ class HomeBloc {
         departureDate,
         returnDate,
         isRoundTrip,
+        acceptsParcels: acceptsParcels,
       );
       if (response.isSuccess) {
         // The search results live under the `data` envelope

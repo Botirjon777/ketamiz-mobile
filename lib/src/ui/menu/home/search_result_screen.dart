@@ -20,11 +20,15 @@ class SearchResultScreen extends StatefulWidget {
     required this.trip,
     this.isRoundTrip = false,
     this.requiredSeats = 1,
+    this.parcelOnly = false,
   });
 
   final TripListModel trip;
   final bool isRoundTrip;
   final int requiredSeats;
+
+  /// Only show trips that accept parcels (driven by the home parcel toggle).
+  final bool parcelOnly;
 
   @override
   State<SearchResultScreen> createState() => _SearchResultScreenState();
@@ -51,6 +55,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
       widget.trip.startTime,
       widget.isRoundTrip ? widget.trip.endTime : null,
       widget.isRoundTrip,
+      acceptsParcels: widget.parcelOnly,
     );
   }
 
@@ -98,9 +103,11 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
             final List<Widget> results;
             if (snapshot.hasData) {
               // Only show trips with enough free seats for the requested
-              // passenger count.
+              // passenger count, and — when sending a parcel — only trips that
+              // accept parcels (belt-and-braces alongside the backend filter).
               final trips = snapshot.data!.departureTrips
                   .where((t) => t.availableSeats >= widget.requiredSeats)
+                  .where((t) => !widget.parcelOnly || t.acceptsParcels)
                   .toList();
               if (trips.isNotEmpty) {
                 results = [

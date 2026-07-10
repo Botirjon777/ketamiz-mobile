@@ -146,8 +146,9 @@ class Repository {
     String toQuarterId,
     DateTime departureDate,
     DateTime? returnDate,
-    bool? isRoundTrip,
-  ) =>
+    bool? isRoundTrip, {
+    bool acceptsParcels = false,
+  }) =>
       apiProvider.fetchTripSearch(
         fromRegionId,
         toRegionId,
@@ -158,6 +159,7 @@ class Repository {
         departureDate,
         returnDate,
         isRoundTrip,
+        acceptsParcels: acceptsParcels,
       );
 
   Future<HttpResult> fetchTopUp(String amount) =>

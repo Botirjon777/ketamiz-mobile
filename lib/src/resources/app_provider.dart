@@ -477,8 +477,9 @@ class ApiProvider {
     String toQuarterId,
     DateTime departureDate,
     DateTime? returnDate,
-    bool? isRoundTrip,
-  ) async {
+    bool? isRoundTrip, {
+    bool acceptsParcels = false,
+  }) async {
     isRoundTrip ??= false;
 
     final queryParams = <String, String>{
@@ -488,6 +489,8 @@ class ApiProvider {
       // time never excludes trips departing earlier that same day.
       'departure_date': _formatBackendDate(departureDate),
     };
+    // Narrow to parcel-accepting trips when the user is sending a parcel.
+    if (acceptsParcels) queryParams['accepts_parcels'] = '1';
     // District/quarter are optional — only narrow the search when provided.
     // This lets region-to-region searches (district/quarter = "0") work.
     if (fromDistrictId != "0") queryParams['start_district_id'] = fromDistrictId;
