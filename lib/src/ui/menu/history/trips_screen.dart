@@ -45,7 +45,7 @@ class _TripsScreenState extends State<TripsScreen> {
   /// sub-tabs are shown, and taller still on the Trips sub-tab (which also
   /// shows the status filter — it doesn't apply to parcels).
   double get _topPad =>
-      _showSubTabs ? (_subTab == 0 ? 200 : 150) : 140;
+      _showSubTabs ? (_subTab == 0 ? 216 : 166) : 140;
 
   bool _isDocsAdded = false;
   bool _isDocsVerified = false;
@@ -218,6 +218,8 @@ class _TripsScreenState extends State<TripsScreen> {
     );
   }
 
+  /// Trips / Parcels sub-tabs, styled identically to the Driver / Client role
+  /// toggle above (white pill wrapper + a purple pill for the active segment).
   Widget _buildSubTabs() {
     Widget tab(int index, String label) {
       final active = _subTab == index;
@@ -228,20 +230,17 @@ class _TripsScreenState extends State<TripsScreen> {
             setState(() => _subTab = index);
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: active ? AppTheme.purple : AppTheme.light,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: active ? AppTheme.purple : AppTheme.border,
-              ),
+              color: active ? AppTheme.purple : Colors.transparent,
+              borderRadius: BorderRadius.circular(32),
             ),
             child: Text(
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
+                fontSize: 14,
                 fontFamily: AppTheme.fontFamily,
-                fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: active ? Colors.white : AppTheme.dark,
               ),
@@ -251,12 +250,26 @@ class _TripsScreenState extends State<TripsScreen> {
       );
     }
 
-    return Row(
-      children: [
-        tab(0, translate('history.my_trips')),
-        const SizedBox(width: 8),
-        tab(1, translate('parcel.my_parcels')),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 5),
+            blurRadius: 100,
+            spreadRadius: 0,
+            color: Colors.black.withValues(alpha: 0.15),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          tab(0, translate('history.my_trips')),
+          tab(1, translate('parcel.my_parcels')),
+        ],
+      ),
     );
   }
 
