@@ -29,6 +29,7 @@ import '../../../utils/nav_constants.dart';
 import '../../../utils/secure_storage.dart';
 import '../../../utils/utils.dart';
 import '../../widgets/containers/settings_container.dart';
+import '../notifications/notifications_screen.dart';
 import '../../widgets/notification_button.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 
@@ -179,10 +180,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 trailingText: _langName,
               ),
             ),
-            SettingsContainer(
-              settingsModel: SettingsModel(
-                icon: Icons.notifications_none_rounded,
-                title: translate("profile.notifications"),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              ),
+              child: SettingsContainer(
+                settingsModel: SettingsModel(
+                  icon: Icons.notifications_none_rounded,
+                  title: translate("profile.notifications"),
+                ),
               ),
             ),
             const SizedBox(height: 20),
