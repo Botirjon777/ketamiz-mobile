@@ -393,11 +393,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 children: [
                   _buildSearchCard(),
-                  const SizedBox(height: 16),
-                  _buildQuickActions(),
                   const SizedBox(height: 24),
                   if (activeBookedId != "0") _buildActiveTrip(),
                   _buildRecommendedTrips(),
+                  const SizedBox(height: 24),
+                  _buildQuickActions(),
                 ],
               ),
             ),
@@ -878,7 +878,12 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, AsyncSnapshot<List<TripListModel>> snapshot) {
         if (!snapshot.hasData) return _buildShimmer();
 
-        final trips = snapshot.data!;
+        // The "Sending a parcel?" toggle filters this list live — flipping it
+        // calls setState, which rebuilds this StreamBuilder with the filter
+        // applied (no re-fetch needed).
+        final trips = snapshot.data!
+            .where((t) => !_sendingParcel || t.acceptsParcels)
+            .toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
