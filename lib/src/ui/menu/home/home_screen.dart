@@ -5,6 +5,7 @@ import 'package:ketamiz/src/model/api/trip_list_model.dart';
 import 'package:ketamiz/src/model/location_model.dart';
 import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
+import 'package:ketamiz/src/ui/dialogs/snack_bar.dart';
 import 'package:ketamiz/src/ui/menu/home/all_trips_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/search_result_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/trip_details_screen.dart';
@@ -83,6 +84,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static int _asId(String id) => int.tryParse(id) ?? 0;
 
+  /// Brief confirmation toast shown whenever a search criterion changes, so the
+  /// user knows their selection was applied. Replaces any current toast so
+  /// rapid changes (e.g. the passenger stepper) don't queue up.
+  void _notifyUpdate(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    CustomSnackBar().showSnackBar(context, message, 1);
+  }
+
   // ── Pickers ─────────────────────────────────────────────────────────────
 
   void _pickFrom() {
@@ -100,6 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
               .where((s) => s.isNotEmpty)
               .join(', ');
         });
+        _notifyUpdate(translate("home.from_updated"));
       },
     );
   }
@@ -118,6 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _toText =
               [n.text, c.text, r.text].where((s) => s.isNotEmpty).join(', ');
         });
+        _notifyUpdate(translate("home.to_updated"));
       },
     );
   }
@@ -162,9 +173,11 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       departureDate = DateTime(date.year, date.month, date.day);
     });
+    _notifyUpdate(translate("home.date_updated"));
   }
 
   void _pickPassengers() {
+    final initialCount = passengerCount;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -252,7 +265,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-    );
+    ).whenComplete(() {
+      if (mounted && passengerCount != initialCount) {
+        _notifyUpdate(translate("home.passengers_updated"));
+      }
+    });
   }
 
   Widget _stepperButton({
@@ -637,7 +654,11 @@ class _HomeScreenState extends State<HomeScreen> {
           Switch.adaptive(
             value: _sendingParcel,
             activeTrackColor: AppTheme.green,
-            onChanged: (v) => setState(() => _sendingParcel = v),
+            onChanged: (v) {
+              setState(() => _sendingParcel = v);
+              _notifyUpdate(translate(
+                  v ? "home.parcel_filter_on" : "home.parcel_filter_off"));
+            },
           ),
         ],
       ),
