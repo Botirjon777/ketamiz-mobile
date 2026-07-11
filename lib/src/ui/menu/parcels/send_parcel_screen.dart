@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_translate/flutter_translate.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../model/api/parcel_model.dart';
 import '../../../model/api/trip_list_model.dart';
@@ -11,6 +12,7 @@ import '../../dialogs/center_dialog.dart';
 import '../../dialogs/snack_bar.dart';
 import '../../widgets/containers/leading_back.dart';
 import '../../widgets/texts/text_16h_500w.dart';
+import '../new_ketamiz/map_select_screen.dart';
 import 'parcel_detail_screen.dart';
 
 /// Client form for sending a parcel on a trip that accepts parcels. Validates
@@ -36,6 +38,7 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
   final _descriptionController = TextEditingController();
 
   ParcelType? _selectedType;
+  LatLng? _pickupLocation;
   bool _submitting = false;
 
   ParcelInfo get _parcel => widget.trip.parcel!;
@@ -78,6 +81,8 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
       parcelTypeId: _selectedType!.id,
       weight: _weight,
       receiverPhone: _phoneController.text.trim(),
+      latitude: _pickupLocation!.latitude.toString(),
+      longitude: _pickupLocation!.longitude.toString(),
       length: _intOrNull(_lengthController.text),
       width: _intOrNull(_widthController.text),
       height: _intOrNull(_heightController.text),
@@ -135,6 +140,9 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
     if (_phoneController.text.trim().isEmpty) {
       return translate("parcel.receiver_phone_error");
     }
+    if (_pickupLocation == null) {
+      return translate("home.set_pickup_location");
+    }
     return null;
   }
 
@@ -142,6 +150,21 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
     final t = s.trim();
     if (t.isEmpty) return null;
     return int.tryParse(t);
+  }
+
+  Future<void> _pickPickupLocation() async {
+    FocusScope.of(context).unfocus();
+    final picked = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapSelectScreen(
+          place: widget.trip.fromWhere,
+          onSelected: (_) {},
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _pickupLocation = picked);
   }
 
   // ── UI ────────────────────────────────────────────────────────────────────
@@ -196,6 +219,10 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
                     icon: Icons.phone_outlined,
                     keyboardType: TextInputType.phone,
                   ),
+                  const SizedBox(height: 18),
+                  _label(translate("home.pickup_location")),
+                  const SizedBox(height: 8),
+                  _buildPickupLocationField(),
                   const SizedBox(height: 18),
                   _label(translate("parcel.description_optional")),
                   const SizedBox(height: 8),
@@ -392,6 +419,44 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
               }),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPickupLocationField() {
+    return GestureDetector(
+      onTap: _pickPickupLocation,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _pickupLocation == null ? AppTheme.border : AppTheme.purple,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.location_on_outlined,
+                color: AppTheme.purple, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _pickupLocation == null
+                    ? translate("home.pickup_choose_on_map")
+                    : translate("home.pickup_location_set"),
+                style: TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 14,
+                  color:
+                      _pickupLocation == null ? AppTheme.gray : AppTheme.black,
+                ),
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_down_rounded,
+                color: AppTheme.gray, size: 20),
+          ],
         ),
       ),
     );

@@ -627,6 +627,8 @@
     "total_price": "Jami narx",
     "accept_parcels": "Posilka qabul qilish",
     "accept_parcels_hint": "Ushbu safarda mijozlar posilka yuborishi mumkin bo'lsin",
+    "acceptance_on": "Posilka qabul qilish yoqildi",
+    "acceptance_off": "Posilka qabul qilish o'chirildi",
     "max_weight_kg": "Maks. og'irlik (kg)",
     "max_dimensions_optional": "Maks. o'lchamlar — U×E×B (ixtiyoriy)",
     "trip_parcels": "Safar posilkalari",

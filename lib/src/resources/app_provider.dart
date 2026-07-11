@@ -407,6 +407,8 @@ class ApiProvider {
     required int parcelTypeId,
     required double weight,
     required String receiverPhone,
+    required String latitude,
+    required String longitude,
     int? length,
     int? width,
     int? height,
@@ -418,6 +420,8 @@ class ApiProvider {
       "parcel_type_id": parcelTypeId,
       "weight": weight,
       "receiver_phone": receiverPhone,
+      "latitude": latitude,
+      "longitude": longitude,
       if (length != null) "length": length,
       if (width != null) "width": width,
       if (height != null) "height": height,
@@ -976,6 +980,13 @@ class ApiProvider {
   Future<HttpResult> fetchCancelDriverTrip(String tripId) async {
     String url = '$baseUrl/driver/trips/cancel-trip/$tripId';
     return await deleteRequest(url);
+  }
+
+  /// Toggle whether this trip still accepts new parcels (e.g. the driver
+  /// turns it off once the car has no room left).
+  Future<HttpResult> fetchToggleParcelAcceptance(String tripId) async {
+    String url = '$baseUrl/driver/trips/$tripId/toggle-parcel-acceptance';
+    return await getRequest(url);
   }
 
   /// Get Card List

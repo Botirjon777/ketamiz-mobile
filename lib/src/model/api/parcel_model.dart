@@ -222,7 +222,9 @@ class ParcelBooking {
             ? ParcelType.fromJson(Map<String, dynamic>.from(json['type']))
             : null,
         trip: ParcelTripBrief.maybeFromJson(json['trip']),
-        sender: ParcelPerson.maybeFromJson(json['sender']),
+        // Some endpoints key the sender as `sender`, others as `sent_by_user`.
+        sender: ParcelPerson.maybeFromJson(json['sender']) ??
+            ParcelPerson.maybeFromJson(json['sent_by_user']),
         driver: ParcelPerson.maybeFromJson(json['driver']),
       );
 

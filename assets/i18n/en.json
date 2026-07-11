@@ -627,6 +627,8 @@
     "total_price": "Total price",
     "accept_parcels": "Accept parcels",
     "accept_parcels_hint": "Let clients send parcels on this trip",
+    "acceptance_on": "Parcel acceptance turned on",
+    "acceptance_off": "Parcel acceptance turned off",
     "max_weight_kg": "Max weight (kg)",
     "max_dimensions_optional": "Max dimensions — L×W×H (optional)",
     "trip_parcels": "Trip parcels",

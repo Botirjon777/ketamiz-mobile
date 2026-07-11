@@ -275,6 +275,8 @@ class _NewKetamizState extends State<NewKetamiz> {
                                       code: "",
                                     ),
                                   ),
+                                  acceptsParcels: trips[index].acceptsParcels,
+                                  parcel: trips[index].parcel,
                                 );
                                 return Column(
                                   children: [

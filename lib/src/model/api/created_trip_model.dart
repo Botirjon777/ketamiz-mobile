@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:ketamiz/src/model/api/trip_list_model.dart' as trip_list;
+import 'package:ketamiz/src/model/api/parcel_model.dart';
 
 CreatedTripResponseModel createdTripResponseModelFromJson(String str) => CreatedTripResponseModel.fromJson(json.decode(str));
 
@@ -33,6 +34,10 @@ class CreatedTripResponseModel {
   IngPoint? startingPoint;
   IngPoint? endingPoint;
   List<dynamic> bookings;
+  // Parcel (posilka) config — present when the trip accepts parcels.
+  bool acceptsParcels;
+  ParcelInfo? parcel;
+  List<ParcelBooking> parcelBookings;
 
   CreatedTripResponseModel({
     required this.id,
@@ -62,6 +67,9 @@ class CreatedTripResponseModel {
     this.startingPoint,
     this.endingPoint,
     required this.bookings,
+    this.acceptsParcels = false,
+    this.parcel,
+    this.parcelBookings = const [],
   });
 
   factory CreatedTripResponseModel.fromJson(Map<String, dynamic> json) => CreatedTripResponseModel(
@@ -92,6 +100,11 @@ class CreatedTripResponseModel {
     startingPoint: json["starting_point"] != null ? IngPoint.fromJson(json["starting_point"]) : null,
     endingPoint: json["ending_point"] != null ? IngPoint.fromJson(json["ending_point"]) : null,
     bookings: json["bookings"] != null ? List<dynamic>.from(json["bookings"].map((x) => x)) : [],
+    acceptsParcels: json["accepts_parcels"] == true ||
+        json["accepts_parcels"] == 1 ||
+        json["accepts_parcels"]?.toString() == "1",
+    parcel: ParcelInfo.maybeFromJson(json["parcel"]),
+    parcelBookings: ParcelBooking.listFromResult(json["parcel_bookings"]),
   );
 
   static int _toInt(dynamic value) {
@@ -158,6 +171,8 @@ class CreatedTripResponseModel {
           ? trip_list.TripDriver(id: driver!.id, name: "${driver!.firstName} ${driver!.lastName}", role: driver!.role)
           : trip_list.TripDriver(id: 0, name: "", role: ""),
       vehicle: vehicle ?? trip_list.TripVehicle(id: 0, model: "", seats: 0, carNumber: "", color: trip_list.CarColor(id: 0, titleUz: "", titleRu: "", titleEn: "", code: "")),
+      acceptsParcels: acceptsParcels,
+      parcel: parcel,
     );
   }
 }

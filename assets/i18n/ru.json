@@ -627,6 +627,8 @@
     "total_price": "Итого",
     "accept_parcels": "Принимать посылки",
     "accept_parcels_hint": "Разрешить клиентам отправлять посылки в этом рейсе",
+    "acceptance_on": "Приём посылок включён",
+    "acceptance_off": "Приём посылок выключен",
     "max_weight_kg": "Макс. вес (кг)",
     "max_dimensions_optional": "Макс. размеры — Д×Ш×В (необязательно)",
     "trip_parcels": "Посылки рейса",

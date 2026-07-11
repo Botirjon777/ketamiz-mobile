@@ -86,6 +86,8 @@ class Repository {
     required int parcelTypeId,
     required double weight,
     required String receiverPhone,
+    required String latitude,
+    required String longitude,
     int? length,
     int? width,
     int? height,
@@ -96,6 +98,8 @@ class Repository {
         parcelTypeId: parcelTypeId,
         weight: weight,
         receiverPhone: receiverPhone,
+        latitude: latitude,
+        longitude: longitude,
         length: length,
         width: width,
         height: height,
@@ -301,6 +305,9 @@ class Repository {
 
   Future<HttpResult> fetchCancelDriverTrip(String tripId) =>
       apiProvider.fetchCancelDriverTrip(tripId);
+
+  Future<HttpResult> fetchToggleParcelAcceptance(String tripId) =>
+      apiProvider.fetchToggleParcelAcceptance(tripId);
 
   Future<HttpResult> fetchCancelBooking(String bookingId) =>
       apiProvider.fetchCancelBooking(bookingId);

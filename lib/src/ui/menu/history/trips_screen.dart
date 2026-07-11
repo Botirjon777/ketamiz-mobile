@@ -717,6 +717,8 @@ class _TripsScreenState extends State<TripsScreen> {
           code: '',
         ),
       ),
+      acceptsParcels: t.acceptsParcels,
+      parcel: t.parcel,
     );
   }
 }

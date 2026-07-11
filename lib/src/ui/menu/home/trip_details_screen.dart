@@ -114,6 +114,11 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   /// accepts parcels; the section is hidden until at least one exists.
   List<ParcelBooking> _tripParcels = [];
 
+  /// Whether this trip currently accepts new parcels (driver view). Starts
+  /// from the trip payload and flips locally once the driver toggles it.
+  late bool _acceptsParcels = widget.trip.acceptsParcels;
+  bool _togglingParcels = false;
+
   @override
   void initState() {
     super.initState();
@@ -125,6 +130,37 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
       if (widget.trip.acceptsParcels) _loadTripParcels();
     } else {
       _initFirstPassenger();
+    }
+  }
+
+  Future<void> _toggleParcelAcceptance(bool value) async {
+    setState(() {
+      _acceptsParcels = value;
+      _togglingParcels = true;
+    });
+
+    final response = await Repository()
+        .fetchToggleParcelAcceptance(widget.trip.id.toString());
+
+    if (!mounted) return;
+    setState(() => _togglingParcels = false);
+
+    if (response.isSuccess) {
+      CustomSnackBar().showSnackBar(
+        context,
+        value
+            ? translate("parcel.acceptance_on")
+            : translate("parcel.acceptance_off"),
+        1,
+      );
+    } else {
+      // Revert on failure — the backend never applied the change.
+      setState(() => _acceptsParcels = !value);
+      CustomSnackBar().showSnackBar(
+        context,
+        translate("auth.something_went_wrong"),
+        2,
+      );
     }
   }
 
@@ -548,10 +584,19 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 if (widget.isDriver) ...[
                   const SizedBox(height: 16),
                   _buildBookedPassengersCard(),
+                  // Let the driver turn parcel acceptance on/off for this
+                  // trip (e.g. no room left in the car) — only for trips
+                  // configured to accept parcels and not yet finished.
+                  if (widget.trip.parcel != null &&
+                      _status != 'completed' &&
+                      _status != 'canceled' &&
+                      _status != 'cancelled') ...[
+                    const SizedBox(height: 16),
+                    _buildParcelAcceptanceCard(),
+                  ],
                   // Parcels booked on this trip — only when the driver accepts
                   // parcels and at least one is booked.
-                  if (widget.trip.acceptsParcels &&
-                      _tripParcels.isNotEmpty) ...[
+                  if (_acceptsParcels && _tripParcels.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     _buildTripParcelsCard(),
                   ],
@@ -1496,6 +1541,59 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // ── Parcel acceptance toggle (driver view) ──────────────────────────────────
+  Widget _buildParcelAcceptanceCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.06),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.inventory_2_outlined,
+              size: 18, color: AppTheme.purple),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text16h500w(title: translate("parcel.accept_parcels")),
+                const SizedBox(height: 2),
+                Text14h400w(
+                  title: translate("parcel.accept_parcels_hint"),
+                  color: AppTheme.gray,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _togglingParcels
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.purple),
+                  ),
+                )
+              : Switch.adaptive(
+                  value: _acceptsParcels,
+                  activeTrackColor: AppTheme.purple,
+                  onChanged: _toggleParcelAcceptance,
+                ),
         ],
       ),
     );
