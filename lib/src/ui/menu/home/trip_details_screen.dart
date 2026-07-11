@@ -11,6 +11,7 @@ import 'package:ketamiz/src/ui/menu/parcels/parcel_detail_screen.dart';
 import 'package:ketamiz/src/ui/menu/parcels/parcel_status.dart';
 import 'package:ketamiz/src/ui/menu/parcels/send_parcel_screen.dart';
 import '../../../model/api/parcel_model.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/slide_to_confirm_button.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/containers/passengers_container.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
@@ -1783,38 +1784,61 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           ),
         ],
       ),
-      child: GestureDetector(
-        onTap: _isCancelling ? null : _cancelTrip,
-        child: Container(
-          height: 52,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppTheme.red, width: 1.5),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SlideToConfirmButton(
+            label: translate("ketamiz.slide_to_start"),
+            onConfirmed: _openGoogleMapsNavigation,
           ),
-          child: Center(
-            child: _isCancelling
-                ? const SizedBox(
-                    height: 22,
-                    width: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppTheme.red,
-                    ),
-                  )
-                : Text(
-                    translate("ketamiz.cancel_trip"),
-                    style: const TextStyle(
-                      color: AppTheme.red,
-                      fontSize: 15,
-                      fontFamily: AppTheme.fontFamily,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: _isCancelling ? null : _cancelTrip,
+            child: Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.red, width: 1.5),
+              ),
+              child: Center(
+                child: _isCancelling
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.red,
+                        ),
+                      )
+                    : Text(
+                        translate("ketamiz.cancel_trip"),
+                        style: const TextStyle(
+                          color: AppTheme.red,
+                          fontSize: 15,
+                          fontFamily: AppTheme.fontFamily,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
+  }
+
+  /// Opens the backend-provided (or locally built) Google Maps directions
+  /// link — see [_googleMapsUrl] — in the external Maps app.
+  Future<void> _openGoogleMapsNavigation() async {
+    final url = _googleMapsUrl;
+    if (url.isEmpty) return;
+    final uri = Uri.parse(url);
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+    }
   }
 
   Future<void> _cancelTrip() async {

@@ -364,6 +364,7 @@
     "select_location_first": "Iltimos avval joylashuvni tanlang",
     "select_location_on_map": "Iltimos xaritada joylashuvni tanlang",
     "cancel_trip": "Sayohatni bekor qilish",
+    "slide_to_start": "Boshlash uchun suring",
     "cancel_trip_confirm": "Haqiqatan ham bu sayohatni bekor qilmoqchimisiz?",
     "trip_cancelled": "Sayohat muvaffaqiyatli bekor qilindi",
     "cancel_booking": "Buyurtmani bekor qilish",

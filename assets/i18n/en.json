@@ -364,6 +364,7 @@
     "select_location_first": "Please select a location first",
     "select_location_on_map": "Please select locations on the map",
     "cancel_trip": "Cancel Trip",
+    "slide_to_start": "Slide to start",
     "cancel_trip_confirm": "Are you sure you want to cancel this trip?",
     "trip_cancelled": "Trip has been cancelled successfully",
     "cancel_booking": "Cancel Booking",
