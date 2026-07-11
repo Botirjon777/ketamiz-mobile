@@ -619,6 +619,12 @@
     "kg": "kg",
     "receiver_phone": "Receiver's phone",
     "receiver_phone_error": "Enter the receiver's phone number",
+    "pickup_location": "Pickup location",
+    "dropoff_location": "Dropoff location",
+    "pickup_set": "Pickup location set",
+    "dropoff_set": "Dropoff location set",
+    "set_pickup_location": "Set the pickup location",
+    "set_dropoff_location": "Set the dropoff location",
     "description": "Description",
     "description_optional": "Description (optional)",
     "description_hint": "e.g. Small documents",
@@ -644,13 +650,14 @@
     "no_parcels": "You have no parcels yet",
     "load_error": "Couldn't load parcels",
     "cancel_parcel": "Cancel parcel",
-    "cancel_confirm": "Are you sure you want to cancel this parcel? The full amount will be refunded.",
-    "cancelled_success": "Parcel cancelled and refunded",
+    "cancel_confirm": "Are you sure you want to cancel this parcel? A cancellation fee will be deducted from your refund.",
+    "cancelled_success": "Parcel cancelled",
     "sender": "Sender",
     "driver": "Driver",
     "status_pending": "Pending",
     "status_confirmed": "Confirmed",
     "status_cancelled": "Cancelled",
-    "status_rejected": "Rejected"
+    "status_rejected": "Rejected",
+    "status_delivered": "Delivered"
   }
 }

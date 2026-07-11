@@ -86,8 +86,10 @@ class Repository {
     required int parcelTypeId,
     required double weight,
     required String receiverPhone,
-    required String latitude,
-    required String longitude,
+    required String pickupLat,
+    required String pickupLong,
+    required String dropoffLat,
+    required String dropoffLong,
     int? length,
     int? width,
     int? height,
@@ -98,12 +100,29 @@ class Repository {
         parcelTypeId: parcelTypeId,
         weight: weight,
         receiverPhone: receiverPhone,
-        latitude: latitude,
-        longitude: longitude,
+        pickupLat: pickupLat,
+        pickupLong: pickupLong,
+        dropoffLat: dropoffLat,
+        dropoffLong: dropoffLong,
         length: length,
         width: width,
         height: height,
         description: description,
+      );
+
+  Future<HttpResult> fetchUpdateParcelLocation({
+    required int bookingId,
+    required String pickupLat,
+    required String pickupLong,
+    required String dropoffLat,
+    required String dropoffLong,
+  }) =>
+      apiProvider.fetchUpdateParcelLocation(
+        bookingId: bookingId,
+        pickupLat: pickupLat,
+        pickupLong: pickupLong,
+        dropoffLat: dropoffLat,
+        dropoffLong: dropoffLong,
       );
 
   Future<HttpResult> fetchClientParcelBookings() =>

@@ -619,6 +619,12 @@
     "kg": "kg",
     "receiver_phone": "Qabul qiluvchi telefoni",
     "receiver_phone_error": "Qabul qiluvchi telefon raqamini kiriting",
+    "pickup_location": "Olib ketish manzili",
+    "dropoff_location": "Topshirish manzili",
+    "pickup_set": "Olib ketish manzili tanlandi",
+    "dropoff_set": "Topshirish manzili tanlandi",
+    "set_pickup_location": "Olib ketish manzilini tanlang",
+    "set_dropoff_location": "Topshirish manzilini tanlang",
     "description": "Izoh",
     "description_optional": "Izoh (ixtiyoriy)",
     "description_hint": "masalan Kichik hujjatlar",
@@ -644,13 +650,14 @@
     "no_parcels": "Sizda hali posilkalar yo'q",
     "load_error": "Posilkalarni yuklab bo'lmadi",
     "cancel_parcel": "Posilkani bekor qilish",
-    "cancel_confirm": "Posilkani bekor qilmoqchimisiz? Summa to'liq qaytariladi.",
-    "cancelled_success": "Posilka bekor qilindi, pul qaytarildi",
+    "cancel_confirm": "Posilkani bekor qilmoqchimisiz? Qaytariladigan summadan bekor qilish komissiyasi ushlab qolinadi.",
+    "cancelled_success": "Posilka bekor qilindi",
     "sender": "Yuboruvchi",
     "driver": "Haydovchi",
     "status_pending": "Kutilmoqda",
     "status_confirmed": "Tasdiqlangan",
     "status_cancelled": "Bekor qilingan",
-    "status_rejected": "Rad etilgan"
+    "status_rejected": "Rad etilgan",
+    "status_delivered": "Yetkazildi"
   }
 }

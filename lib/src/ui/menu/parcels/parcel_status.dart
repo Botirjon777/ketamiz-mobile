@@ -15,6 +15,8 @@ Color parcelStatusColor(String status) {
     case 'canceled':
     case 'rejected':
       return AppTheme.red;
+    case 'delivered':
+      return AppTheme.blue;
     default:
       return AppTheme.gray;
   }
@@ -31,6 +33,8 @@ String parcelStatusLabel(String status) {
       return translate("parcel.status_cancelled");
     case 'rejected':
       return translate("parcel.status_rejected");
+    case 'delivered':
+      return translate("parcel.status_delivered");
     default:
       return status;
   }

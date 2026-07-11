@@ -183,6 +183,31 @@ class ApiProvider {
     }
   }
 
+  /// PATCH Request (JSON)
+  static Future<HttpResult> patchRequest(
+      String url, [Map<String, dynamic> body = const {}]) async {
+    final dio = _dio;
+    final headers = await _getReqHeader();
+
+    try {
+      Response response = await dio.patch(
+        url,
+        data: body,
+        options: Options(
+          headers: headers,
+          sendTimeout: durationTimeout,
+          receiveTimeout: durationTimeout,
+          validateStatus: (status) => true,
+        ),
+      );
+      return _processResponse(response);
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return _handleGenericError(e);
+    }
+  }
+
   // Legacy postRequest shim (deprecating but keeping if internal usage exists,
   // though we will replace all calls)
   // Replaced by postFormRequest or postJsonRequest usage below.
@@ -407,8 +432,10 @@ class ApiProvider {
     required int parcelTypeId,
     required double weight,
     required String receiverPhone,
-    required String latitude,
-    required String longitude,
+    required String pickupLat,
+    required String pickupLong,
+    required String dropoffLat,
+    required String dropoffLong,
     int? length,
     int? width,
     int? height,
@@ -420,8 +447,10 @@ class ApiProvider {
       "parcel_type_id": parcelTypeId,
       "weight": weight,
       "receiver_phone": receiverPhone,
-      "latitude": latitude,
-      "longitude": longitude,
+      "pickup_lat": pickupLat,
+      "pickup_long": pickupLong,
+      "dropoff_lat": dropoffLat,
+      "dropoff_long": dropoffLong,
       if (length != null) "length": length,
       if (width != null) "width": width,
       if (height != null) "height": height,
@@ -429,6 +458,25 @@ class ApiProvider {
         "parcel_description": description.trim(),
     };
     return await postRequest(url, data);
+  }
+
+  /// Client: update pickup/dropoff coordinates on an existing parcel booking
+  /// (only while the trip hasn't started yet).
+  Future<HttpResult> fetchUpdateParcelLocation({
+    required int bookingId,
+    required String pickupLat,
+    required String pickupLong,
+    required String dropoffLat,
+    required String dropoffLong,
+  }) async {
+    String url = '$baseUrl/client/parcel-bookings/$bookingId/location';
+    final data = <String, dynamic>{
+      "pickup_lat": pickupLat,
+      "pickup_long": pickupLong,
+      "dropoff_lat": dropoffLat,
+      "dropoff_long": dropoffLong,
+    };
+    return await patchRequest(url, data);
   }
 
   /// Client: my sent parcels (paginated).
@@ -986,7 +1034,7 @@ class ApiProvider {
   /// turns it off once the car has no room left).
   Future<HttpResult> fetchToggleParcelAcceptance(String tripId) async {
     String url = '$baseUrl/driver/trips/$tripId/toggle-parcel-acceptance';
-    return await getRequest(url);
+    return await patchRequest(url);
   }
 
   /// Get Card List

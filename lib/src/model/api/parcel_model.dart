@@ -187,6 +187,10 @@ class ParcelBooking {
   final ParcelTripBrief? trip;
   final ParcelPerson? sender;
   final ParcelPerson? driver;
+  final double? pickupLat;
+  final double? pickupLong;
+  final double? dropoffLat;
+  final double? dropoffLong;
 
   const ParcelBooking({
     required this.id,
@@ -203,7 +207,14 @@ class ParcelBooking {
     this.trip,
     this.sender,
     this.driver,
+    this.pickupLat,
+    this.pickupLong,
+    this.dropoffLat,
+    this.dropoffLong,
   });
+
+  bool get hasPickup => pickupLat != null && pickupLong != null;
+  bool get hasDropoff => dropoffLat != null && dropoffLong != null;
 
   bool get isCancellable => status == 'pending' || status == 'confirmed';
 
@@ -226,6 +237,10 @@ class ParcelBooking {
         sender: ParcelPerson.maybeFromJson(json['sender']) ??
             ParcelPerson.maybeFromJson(json['sent_by_user']),
         driver: ParcelPerson.maybeFromJson(json['driver']),
+        pickupLat: _asDoubleOrNull(json['pickup_lat']),
+        pickupLong: _asDoubleOrNull(json['pickup_long']),
+        dropoffLat: _asDoubleOrNull(json['dropoff_lat']),
+        dropoffLong: _asDoubleOrNull(json['dropoff_long']),
       );
 
   static List<ParcelBooking> listFromResult(dynamic result) {
@@ -268,6 +283,12 @@ int _asInt(dynamic v) {
 double _asDouble(dynamic v) {
   if (v is num) return v.toDouble();
   return double.tryParse(v?.toString() ?? '') ?? 0;
+}
+
+double? _asDoubleOrNull(dynamic v) {
+  if (v == null) return null;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString());
 }
 
 DateTime? _asDate(dynamic v) {

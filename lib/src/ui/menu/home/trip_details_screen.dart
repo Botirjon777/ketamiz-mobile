@@ -133,11 +133,12 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     }
   }
 
-  Future<void> _toggleParcelAcceptance(bool value) async {
-    setState(() {
-      _acceptsParcels = value;
-      _togglingParcels = true;
-    });
+  /// The endpoint is a blind toggle (no target value in the request) — it
+  /// always flips whatever the server currently has, and echoes the actual
+  /// resulting state back in `data.accepts_parcels`, which is what drives the
+  /// switch rather than the tap itself.
+  Future<void> _toggleParcelAcceptance(bool _) async {
+    setState(() => _togglingParcels = true);
 
     final response = await Repository()
         .fetchToggleParcelAcceptance(widget.trip.id.toString());
@@ -146,21 +147,24 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     setState(() => _togglingParcels = false);
 
     if (response.isSuccess) {
+      final result = response.result;
+      final data = result is Map ? result['data'] : null;
+      final accepts = data is Map ? data['accepts_parcels'] : null;
+      final newValue = accepts == true || accepts == 1 || accepts?.toString() == '1';
+      setState(() => _acceptsParcels = newValue);
       CustomSnackBar().showSnackBar(
         context,
-        value
+        newValue
             ? translate("parcel.acceptance_on")
             : translate("parcel.acceptance_off"),
         1,
       );
     } else {
-      // Revert on failure — the backend never applied the change.
-      setState(() => _acceptsParcels = !value);
-      CustomSnackBar().showSnackBar(
-        context,
-        translate("auth.something_went_wrong"),
-        2,
-      );
+      final msg = (response.result is Map
+              ? response.result['message']?.toString()
+              : null) ??
+          translate("auth.something_went_wrong");
+      CustomSnackBar().showSnackBar(context, msg, 2);
     }
   }
 

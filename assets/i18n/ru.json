@@ -619,6 +619,12 @@
     "kg": "кг",
     "receiver_phone": "Телефон получателя",
     "receiver_phone_error": "Укажите номер телефона получателя",
+    "pickup_location": "Место забора",
+    "dropoff_location": "Место доставки",
+    "pickup_set": "Место забора выбрано",
+    "dropoff_set": "Место доставки выбрано",
+    "set_pickup_location": "Укажите место забора",
+    "set_dropoff_location": "Укажите место доставки",
     "description": "Описание",
     "description_optional": "Описание (необязательно)",
     "description_hint": "напр. Небольшие документы",
@@ -644,13 +650,14 @@
     "no_parcels": "У вас пока нет посылок",
     "load_error": "Не удалось загрузить посылки",
     "cancel_parcel": "Отменить посылку",
-    "cancel_confirm": "Вы уверены, что хотите отменить посылку? Сумма будет возвращена полностью.",
-    "cancelled_success": "Посылка отменена, средства возвращены",
+    "cancel_confirm": "Вы уверены, что хотите отменить посылку? Из суммы возврата будет удержана комиссия за отмену.",
+    "cancelled_success": "Посылка отменена",
     "sender": "Отправитель",
     "driver": "Водитель",
     "status_pending": "Ожидает",
     "status_confirmed": "Подтверждена",
     "status_cancelled": "Отменена",
-    "status_rejected": "Отклонена"
+    "status_rejected": "Отклонена",
+    "status_delivered": "Доставлена"
   }
 }

@@ -39,6 +39,7 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
 
   ParcelType? _selectedType;
   LatLng? _pickupLocation;
+  LatLng? _dropoffLocation;
   bool _submitting = false;
 
   ParcelInfo get _parcel => widget.trip.parcel!;
@@ -81,8 +82,10 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
       parcelTypeId: _selectedType!.id,
       weight: _weight,
       receiverPhone: _phoneController.text.trim(),
-      latitude: _pickupLocation!.latitude.toString(),
-      longitude: _pickupLocation!.longitude.toString(),
+      pickupLat: _pickupLocation!.latitude.toString(),
+      pickupLong: _pickupLocation!.longitude.toString(),
+      dropoffLat: _dropoffLocation!.latitude.toString(),
+      dropoffLong: _dropoffLocation!.longitude.toString(),
       length: _intOrNull(_lengthController.text),
       width: _intOrNull(_widthController.text),
       height: _intOrNull(_heightController.text),
@@ -141,7 +144,10 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
       return translate("parcel.receiver_phone_error");
     }
     if (_pickupLocation == null) {
-      return translate("home.set_pickup_location");
+      return translate("parcel.set_pickup_location");
+    }
+    if (_dropoffLocation == null) {
+      return translate("parcel.set_dropoff_location");
     }
     return null;
   }
@@ -165,6 +171,21 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
     );
     if (picked == null || !mounted) return;
     setState(() => _pickupLocation = picked);
+  }
+
+  Future<void> _pickDropoffLocation() async {
+    FocusScope.of(context).unfocus();
+    final picked = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapSelectScreen(
+          place: widget.trip.toWhere,
+          onSelected: (_) {},
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _dropoffLocation = picked);
   }
 
   // ── UI ────────────────────────────────────────────────────────────────────
@@ -220,9 +241,21 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
                     keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: 18),
-                  _label(translate("home.pickup_location")),
+                  _label(translate("parcel.pickup_location")),
                   const SizedBox(height: 8),
-                  _buildPickupLocationField(),
+                  _buildLocationField(
+                    location: _pickupLocation,
+                    setLabel: translate("parcel.pickup_set"),
+                    onTap: _pickPickupLocation,
+                  ),
+                  const SizedBox(height: 18),
+                  _label(translate("parcel.dropoff_location")),
+                  const SizedBox(height: 8),
+                  _buildLocationField(
+                    location: _dropoffLocation,
+                    setLabel: translate("parcel.dropoff_set"),
+                    onTap: _pickDropoffLocation,
+                  ),
                   const SizedBox(height: 18),
                   _label(translate("parcel.description_optional")),
                   const SizedBox(height: 8),
@@ -424,16 +457,20 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
     );
   }
 
-  Widget _buildPickupLocationField() {
+  Widget _buildLocationField({
+    required LatLng? location,
+    required String setLabel,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
-      onTap: _pickPickupLocation,
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _pickupLocation == null ? AppTheme.border : AppTheme.purple,
+            color: location == null ? AppTheme.border : AppTheme.purple,
           ),
         ),
         child: Row(
@@ -443,14 +480,13 @@ class _SendParcelScreenState extends State<SendParcelScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                _pickupLocation == null
+                location == null
                     ? translate("home.pickup_choose_on_map")
-                    : translate("home.pickup_location_set"),
+                    : setLabel,
                 style: TextStyle(
                   fontFamily: AppTheme.fontFamily,
                   fontSize: 14,
-                  color:
-                      _pickupLocation == null ? AppTheme.gray : AppTheme.black,
+                  color: location == null ? AppTheme.gray : AppTheme.black,
                 ),
               ),
             ),

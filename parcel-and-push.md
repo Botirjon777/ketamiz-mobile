@@ -40,6 +40,23 @@ yig'ib beradi: posilka (pochta) yuborish/qabul qilish oqimi va push xabarlar
 HTTP status kodlar: `200` OK, `201` yaratildi, `404` topilmadi, `422` validatsiya/biznes
 xatosi, `500` server xatosi. **Har doim `status` maydoniga qarab tekshiring.**
 
+### Posilka endpoint'lari — qisqa ro'yxat
+
+Hammasi `Authorization: Bearer <token>` bilan (`auth:api`). Base: `/api/v1`.
+
+| Metod | Yo'l | Kim | Tavsif | Bo'lim |
+|---|---|---|---|---|
+| `GET` | `/parcel-types` | Hamma | Posilka turlari (forma uchun) | 2 |
+| `POST` | `/client/parcel-bookings` | Mijoz | Posilka yuborish (pickup/dropoff majburiy) | 3.2 |
+| `GET` | `/client/parcel-bookings` | Mijoz | Mening posilkalarim (ro'yxat) | 3.3 |
+| `GET` | `/client/parcel-bookings/{id}` | Mijoz | Bitta posilka detali | 3.4 |
+| `PATCH` | `/client/parcel-bookings/{id}/location` | Mijoz | Pickup/dropoff manzilini yangilash | 3.5 |
+| `DELETE` | `/client/parcel-bookings/{id}/cancel` | Mijoz | Posilkani bekor qilish (komissiya bilan) | 3.6 |
+| `GET` | `/driver/parcel-bookings` | Haydovchi | Barcha kelgan posilkalar | 4.2 |
+| `GET` | `/driver/parcel-bookings/trip/{tripId}` | Haydovchi | Bitta safar posilkalari | 4.2 |
+| `GET` | `/driver/trips/{id}` | Haydovchi | Safar detali — `google_map_url` + pickup/dropoff | 4.3 |
+| `PATCH` | `/driver/trips/{id}/toggle-parcel-acceptance` | Haydovchi | Safar uchun pochta qabulini yoq/o'chir | 4.4 |
+
 ---
 
 ## 1. Push Notification (FCM) — eng muhimi
@@ -232,7 +249,13 @@ Authorization: Bearer <token>
   "width": 20,                // sm, ixtiyoriy
   "height": 15,               // sm, ixtiyoriy
   "receiver_phone": "+998901234569",
-  "parcel_description": "Uncha katta bo'lmagan hujjatlar"   // ixtiyoriy, max 150
+  "parcel_description": "Uncha katta bo'lmagan hujjatlar",  // ixtiyoriy, max 150
+
+  // === Olib ketish (pickup) va topshirish (dropoff) nuqtalari — MAJBURIY ===
+  "pickup_lat":  41.311081,    // jo'natuvchidan olib ketiladigan nuqta
+  "pickup_long": 69.279729,
+  "dropoff_lat":  41.325555,   // qabul qiluvchiga topshiriladigan nuqta
+  "dropoff_long": 69.228888
 }
 ```
 
@@ -244,6 +267,15 @@ Authorization: Bearer <token>
 | `length` / `width` / `height` | ❌ | butun son, min 1, `max_*` dan oshmasin |
 | `receiver_phone` | ✅ | string, max 20 |
 | `parcel_description` | ❌ | string, max 150 |
+| `pickup_lat` | ✅ | `numeric`, `-90` … `90` |
+| `pickup_long` | ✅ | `numeric`, `-180` … `180` |
+| `dropoff_lat` | ✅ | `numeric`, `-90` … `90` |
+| `dropoff_long` | ✅ | `numeric`, `-180` … `180` |
+
+> 📍 **Koordinatalar majburiy.** Foydalanuvchi xaritadan (yoki qurilma GPS'idan)
+> **pickup** (qayerdan olib ketish) va **dropoff** (qayerga topshirish) nuqtalarini
+> tanlaydi. Yuborilmasa `422` qaytadi. Bu nuqtalar haydovchi xaritasida (Google Maps
+> yo'nalishida) chiziladi — 4.3-bo'limga qarang.
 
 Muvaffaqiyat (`201`) — `data` ichida to'liq booking obyekti qaytadi (pastdagi 3.4
 formatida). Pul mijoz balansidan **darhol** yechiladi (haydovchi trip yaratishda posilka
@@ -256,6 +288,7 @@ olishga rozi bo'lgani uchun qo'shimcha tasdiq kutilmaydi — status darhol `conf
 - "Bu safar tanlangan pochta turini qabul qilmaydi"
 - "Posilka uchun balansingiz yetarli emas"
 - "Safar boshlangani uchun posilka qabul qilinmaydi"
+- "The pickup lat field is required." (koordinata yuborilmasa — validatsiya xatosi)
 
 ### 3.3. Mening posilkalarim (ro'yxat)
 
@@ -281,6 +314,10 @@ Booking obyekti formati:
   "length": 30, "width": 20, "height": 15,
   "total_price": "10000.00",
   "receiver_phone": "+998901234569",
+  "pickup_lat": 41.311081,
+  "pickup_long": 69.279729,
+  "dropoff_lat": 41.325555,
+  "dropoff_long": 69.228888,
   "parcel_description": "Uncha katta bo'lmagan hujjatlar",
   "created_at": "2026-07-09 14:20:00",
   "type": { "id": 1, "name": "Hujjat / konvert", "icon": "..." },
@@ -298,16 +335,62 @@ Booking obyekti formati:
 }
 ```
 
-### 3.5. Posilkani bekor qilish (mijoz o'zi)
+### 3.5. Posilka manzilini (pickup/dropoff) yangilash
+
+Foydalanuvchi xaritadan tanlagan pickup/dropoff nuqtasini keyin o'zgartirmoqchi bo'lsa:
+
+```
+PATCH /api/v1/client/parcel-bookings/{id}/location
+Authorization: Bearer <token>
+
+{
+  "pickup_lat":  41.311081,
+  "pickup_long": 69.279729,
+  "dropoff_lat":  41.325555,
+  "dropoff_long": 69.228888
+}
+```
+
+| Maydon | Majburiy | Qoida |
+|---|---|---|
+| `pickup_lat` | ✅ | `numeric`, `-90` … `90` |
+| `pickup_long` | ✅ | `numeric`, `-180` … `180` |
+| `dropoff_lat` | ✅ | `numeric`, `-90` … `90` |
+| `dropoff_long` | ✅ | `numeric`, `-180` … `180` |
+
+**Qoidalar:**
+- Faqat `pending` / `confirmed` holatdagi posilka uchun.
+- Faqat **safar boshlanishidan oldin** o'zgartirish mumkin (aks holda `422`:
+  "Safar boshlangani uchun manzilni o'zgartirib bo'lmaydi").
+- To'rttala koordinata ham yuborilishi shart.
+
+Muvaffaqiyat (`200`) — `data` ichida yangilangan booking obyekti qaytadi (3.4 formati).
+
+### 3.6. Posilkani bekor qilish (mijoz o'zi)
 
 ```
 DELETE /api/v1/client/parcel-bookings/{id}/cancel
 Authorization: Bearer <token>
 ```
 
-- Faqat `pending` yoki `confirmed` holatdagi posilkani bekor qilib bo'ladi.
-- `confirmed` bo'lsa — pul **to'liq** mijozga qaytariladi, haydovchi va sig'im tiklanadi.
-- Bekor bo'lgach haydovchiga `parcel.cancelled_by_client` push ketadi.
+**Qoidalar:**
+- Faqat `pending` / `confirmed` holatdagi posilka bekor qilinadi.
+- **Faqat safar boshlanishidan oldin** — safar boshlangan bo'lsa `422`:
+  "Safar boshlangani uchun posilkani bekor qilib bo'lmaydi".
+- Bekor bo'lgach: sig'im tiklanadi va haydovchiga `parcel.cancelled_by_client` push ketadi.
+
+**⚠️ Pul qaytarish — bekor qilish jarimasi bilan** (mijoz o'zi bekor qilganda).
+Bu **admin bekor qilishidan farq qiladi** (admin — to'liq qaytaradi, jarimasiz).
+To'liq hisob 5-bo'limda; qisqasi 10 000 UZS misolida:
+
+| Kim | Natija |
+|---|---|
+| **Mijoz** | `9 500` qaytadi (`10 000 − 5% jarima`) |
+| **Haydovchi** | olgan netto daromadi qaytarib olinadi, `+100` kompensatsiya qoladi |
+| **Kompaniya** | `400` (jarima − haydovchi kompensatsiyasi) o'zida qoladi |
+
+UI'da bekor qilishdan oldin foydalanuvchini **jarima ushlab qolinishi** haqida
+ogohlantiring (masalan "Bekor qilsangiz ~5% komissiya ushlanadi").
 
 ---
 
@@ -359,6 +442,63 @@ Authorization: Bearer <token>
 
 `data` — booking'lar ro'yxati (3.4 formati bilan bir xil).
 
+### 4.3. Xaritada yo'nalish — pickup/dropoff nuqtalari
+
+Haydovchi bitta safarni ochganda (`GET /api/v1/driver/trips/{id}`) javobda quyidagilar bor:
+
+- **`google_map_url`** — tayyor Google Maps yo'nalish havolasi. Uni to'g'ridan-to'g'ri
+  tashqi Google Maps ilovasida ochsa bo'ladi (`launchUrl`). Tarkibi:
+  ```
+  origin      = safar boshlanish nuqtasi (start_lat, start_long)
+  destination = safar tugash nuqtasi (end_lat, end_long)
+  waypoints   = yo'lovchilar olinadigan nuqtalar
+              + har bir TASDIQLANGAN posilkaning pickup va dropoff nuqtasi
+  ```
+  Ya'ni yo'nalish: `boshlanish → pickup1 → dropoff1 → pickup2 → dropoff2 → tugash`.
+  > Faqat `status = confirmed` posilkalar qo'shiladi; `cancelled`/`rejected` kirmaydi.
+
+- **`parcel_bookings`** — massiv, har bir posilkada koordinatalar ham bor:
+  ```json
+  {
+    "id": 108,
+    "status": "confirmed",
+    "receiver_phone": "+998901234569",
+    "pickup_lat": 41.311081, "pickup_long": 69.279729,
+    "dropoff_lat": 41.325555, "dropoff_long": 69.228888,
+    "weight": 2, "length": 30, "width": 20, "height": 15,
+    "total_price": "10000.00",
+    "type": { "id": 1, "name": "Hujjat / konvert", "icon": "..." },
+    "sent_by_user": { "id": 5, "first_name": "...", "phone": "..." }
+  }
+  ```
+
+Agar ilova ichida o'z xaritangizni chizmoqchi bo'lsangiz — `parcel_bookings` dagi
+`pickup_lat/long` va `dropoff_lat/long` ni marker qilib qo'ying va `start_lat/long` →
+`end_lat/long` orasida chizing. Aks holda tayyor `google_map_url` ni oching.
+
+### 4.4. Safar uchun pochta qabulini yoqish/o'chirish
+
+Haydovchi mavjud safarda pochta qabulini tez yoqib/o'chirishi uchun (toggle):
+
+```
+PATCH /api/v1/driver/trips/{id}/toggle-parcel-acceptance
+Authorization: Bearer <token>
+```
+
+Har chaqiruvda holat teskarisiga o'zgaradi. Javob:
+```json
+{
+  "status": "success",
+  "message": "Endi bu safar uchun pochta qabul qilinadi",
+  "data": { "trip_id": 42, "parcel_id": 7, "accepts_parcels": true }
+}
+```
+
+- Safar topilmasa yoki bu haydovchiniki bo'lmasa → `404`.
+- Safarda umuman posilka sozlamasi bo'lmasa (trip yaratishda `accepts_parcels=false`
+  bo'lgan) → `404` "Bu safar uchun pochta sozlamasi mavjud emas".
+- UI'da `accepts_parcels` qiymatiga qarab switch/toggle holatini yangilang.
+
 ---
 
 ## 5. Status (holat) qiymatlari va hayot sikli
@@ -371,14 +511,30 @@ Posilka `status` maydoni:
 | `confirmed` | Qabul qilingan, to'lov o'tgan | yashil |
 | `cancelled` | Bekor qilingan (mijoz/admin), pul qaytarilgan | qizil |
 | `rejected` | Rad etilgan | qizil |
+| `delivered` | Yetkazib berilgan | ko'k / kulrang |
 
-**Bekor qilish qoidasi:** faqat `pending` / `confirmed` holatdagi posilkani bekor
-qilib bo'ladi. `cancelled` / `rejected` — o'zgarmaydi.
+**Bekor qilish qoidasi:** faqat `pending` / `confirmed` holatdagi posilkani, **faqat
+safar boshlanishidan oldin** bekor qilib bo'ladi. `cancelled` / `rejected` — o'zgarmaydi.
 
-### Pul mantig'i (mijoz uchun muhim — "zarar yo'q")
-Posilka **admin tomonidan** yoki **mijoz tomonidan** bekor qilinganda:
+### Pul mantig'i — kim bekor qilganiga bog'liq
+
+Ikki xil ssenariy bor, ular **turlicha** hisoblanadi:
+
+#### A) Mijoz o'zi bekor qildi (`DELETE .../cancel`) — jarima bilan
+Booking narxi bekor qilish paytida quyidagicha bo'linadi (foizlar backend `.env` da,
+hozir: jarima `5%`, haydovchi kompensatsiyasi `1%`):
+
+| Kim | O'zgarish (misol: `total_price = 10 000`) |
+|---|---|
+| **Mijoz** | `9 500` qaytadi — `total_price − 5% jarima` |
+| **Haydovchi** | olgan netto daromadi qaytarib olinadi, `+100` (1%) kompensatsiya qoladi |
+| **Kompaniya** | `400` (jarima `500` − kompensatsiya `100`) o'zida qoladi |
+
+→ UI'da mijozni bekor qilishdan oldin **komissiya ushlanishi** haqida ogohlantiring.
+
+#### B) Admin bekor qildi — to'liq, jarimasiz ("zarar yo'q")
 - Mijozga **to'liq summa** (`total_price`) qaytariladi.
-- Haydovchidan faqat olgan (netto) daromadi yechiladi — **jarima yo'q**.
+- Haydovchidan faqat olgan netto daromadi yechiladi — **jarima yo'q**.
 - Ikki taraf ham zarar ko'rmaydi.
 
 UI'da `parcel.cancelled_by_admin` push kelganda foydalanuvchiga
@@ -395,9 +551,13 @@ UI'da `parcel.cancelled_by_admin` push kelganda foydalanuvchiga
 - [ ] `GET /parcel-types` — forma uchun.
 - [ ] Trip kartasi: `accepts_parcels` / `parcel` bo'lsa "Posilka yuborish" tugmasi.
 - [ ] Booking forma: narx = `weight × price_per_kg`, `available_weight` va o'lcham cheklovi.
+- [ ] **Xaritadan pickup va dropoff nuqta tanlash** (majburiy) — `POST` da yuborish.
 - [ ] `POST /client/parcel-bookings` + 422 xatolarni `message` bilan ko'rsatish.
-- [ ] "Mening posilkalarim" ro'yxati + detal + bekor qilish.
+- [ ] "Mening posilkalarim" ro'yxati + detal.
+- [ ] **Manzilni yangilash** — `PATCH .../location` (safar boshlanmasidan oldin).
+- [ ] **Bekor qilish** — `DELETE .../cancel` + komissiya ogohlantirishi (safar boshlanmasidan oldin).
 - [ ] Haydovchi: trip yaratishda posilka bloki; kelgan posilkalar ro'yxati.
+- [ ] Haydovchi: `google_map_url` ni ochish **yoki** `parcel_bookings` pickup/dropoff'ni xaritada marker qilish (4.3).
 - [ ] Status ranglari (5-bo'lim).
 
 ---
