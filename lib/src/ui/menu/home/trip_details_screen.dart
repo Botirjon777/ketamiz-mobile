@@ -14,6 +14,7 @@ import '../../../model/api/parcel_model.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/slide_to_confirm_button.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/containers/passengers_container.dart';
+import 'package:ketamiz/src/ui/widgets/parcel_image.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:ketamiz/src/utils/utils.dart';
@@ -1264,12 +1265,12 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
             Container(
               width: 44,
               height: 44,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppTheme.purple.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.inventory_2_outlined,
-                  color: AppTheme.purple, size: 22),
+              child: const ParcelImage(size: 26),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1568,8 +1569,7 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.inventory_2_outlined,
-              size: 18, color: AppTheme.purple),
+          const ParcelImage(size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -1679,13 +1679,12 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Icon(Icons.inventory_2_outlined,
-                  size: 22, color: AppTheme.purple),
+              child: const ParcelImage(size: 24),
             ),
             const SizedBox(width: 12),
             Expanded(

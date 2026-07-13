@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../model/api/parcel_model.dart';
 import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
+import '../../widgets/parcel_image.dart';
 import '../../../utils/utils.dart';
 import '../../dialogs/center_dialog.dart';
 import '../../dialogs/snack_bar.dart';
@@ -560,7 +561,13 @@ class _ParcelDetailScreenState extends State<ParcelDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text16h500w(title: translate("parcel.parcel_info")),
+          Row(
+            children: [
+              const ParcelImage(size: 20),
+              const SizedBox(width: 8),
+              Text16h500w(title: translate("parcel.parcel_info")),
+            ],
+          ),
           const SizedBox(height: 12),
           if (b.type != null)
             _row(translate("parcel.parcel_type"), b.type!.name),

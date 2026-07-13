@@ -3,6 +3,7 @@ import 'package:flutter_translate/flutter_translate.dart';
 
 import '../../../model/api/parcel_model.dart';
 import '../../../theme/app_theme.dart';
+import '../../widgets/parcel_image.dart';
 import '../../../utils/utils.dart';
 import 'parcel_status.dart';
 
@@ -61,8 +62,7 @@ class ParcelBookingTile extends StatelessWidget {
             ],
             Row(
               children: [
-                const Icon(Icons.inventory_2_outlined,
-                    size: 15, color: AppTheme.gray),
+                const ParcelImage(size: 16),
                 const SizedBox(width: 6),
                 Text(
                   "${Utils.weightFormat(booking.weight)} ${translate("parcel.kg")}"

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 import '../../../model/api/trip_list_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/utils.dart';
+import '../parcel_image.dart';
 
 class DestinationsContainer extends StatelessWidget {
   const DestinationsContainer({super.key, required this.trip});
@@ -284,16 +284,14 @@ class DestinationsContainer extends StatelessWidget {
                   Container(
                     width: 84,
                     height: 52,
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: AppTheme.light,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: SvgPicture.asset(
-                      'assets/icons/car.svg',
+                    child: Image.asset(
+                      'assets/images/distance.png',
                       fit: BoxFit.contain,
-                      colorFilter: ColorFilter.mode(
-                          AppTheme.dark.withOpacity(0.75), BlendMode.srcIn),
                     ),
                   ),
                   if (trip.vehicle.model.isNotEmpty) ...[
@@ -373,8 +371,7 @@ class DestinationsContainer extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.inventory_2_outlined,
-              color: AppTheme.green, size: 18),
+          const ParcelImage(size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

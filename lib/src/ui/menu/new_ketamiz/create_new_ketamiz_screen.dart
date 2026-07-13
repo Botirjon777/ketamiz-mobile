@@ -29,6 +29,7 @@ import '../../widgets/containers/car_container.dart';
 import '../../widgets/texts/text_12h_400w.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
+import '../../widgets/parcel_image.dart';
 import '../../widgets/info_tooltip.dart';
 import '../profile/add_vehicle_screen.dart';
 import 'map_select_screen.dart';
@@ -1256,8 +1257,7 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.inventory_2_outlined,
-                  size: 18, color: AppTheme.purple),
+              const ParcelImage(size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text16h500w(title: translate("parcel.accept_parcels")),

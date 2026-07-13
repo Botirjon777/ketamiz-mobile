@@ -22,6 +22,7 @@ import '../../../theme/app_theme.dart';
 import '../../widgets/containers/destinations_container.dart';
 import '../../widgets/language_button.dart';
 import '../../widgets/notification_button.dart';
+import '../../widgets/parcel_image.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -616,12 +617,12 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             width: 34,
             height: 34,
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: AppTheme.green.withOpacity(0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.inventory_2_outlined,
-                color: AppTheme.green, size: 18),
+            child: const ParcelImage(size: 22),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -774,6 +775,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           _quickAction(
             icon: Icons.inventory_2_outlined,
+            imageAsset: 'assets/images/package.png',
             color: AppTheme.green,
             title: translate("home.action_send_parcel"),
             subtitle: translate("home.action_send_parcel_sub"),
@@ -807,6 +809,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    String? imageAsset,
   }) {
     return Expanded(
       child: GestureDetector(
@@ -819,11 +822,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 width: 46,
                 height: 46,
+                padding: imageAsset != null ? const EdgeInsets.all(9) : null,
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: color, size: 22),
+                child: imageAsset != null
+                    ? Image.asset(imageAsset, fit: BoxFit.contain)
+                    : Icon(icon, color: color, size: 22),
               ),
               const SizedBox(height: 8),
               Text(

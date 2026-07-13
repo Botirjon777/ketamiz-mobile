@@ -5,6 +5,7 @@ import '../../../model/api/parcel_model.dart';
 import '../../../model/event_bus/http_result.dart';
 import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
+import '../../widgets/parcel_image.dart';
 import '../../../utils/nav_constants.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import 'parcel_booking_tile.dart';
@@ -110,13 +111,16 @@ class _MyParcelsViewState extends State<MyParcelsView> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  _hasError
-                      ? Icons.wifi_off_rounded
-                      : Icons.inventory_2_outlined,
-                  size: 64,
-                  color: AppTheme.gray.withValues(alpha: 0.5),
-                ),
+                _hasError
+                    ? Icon(
+                        Icons.wifi_off_rounded,
+                        size: 64,
+                        color: AppTheme.gray.withValues(alpha: 0.5),
+                      )
+                    : Opacity(
+                        opacity: 0.85,
+                        child: const ParcelImage(size: 72),
+                      ),
                 const SizedBox(height: 16),
                 Text14h400w(
                   title: _hasError
