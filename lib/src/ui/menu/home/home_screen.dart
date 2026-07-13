@@ -768,6 +768,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _quickAction(
             icon: Icons.directions_car_outlined,
+            imageAsset: 'assets/images/car-sharing.png',
+            tintImage: true,
             color: AppTheme.purple,
             title: translate("home.action_offer_trip"),
             subtitle: translate("home.action_offer_trip_sub"),
@@ -783,6 +785,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           _quickAction(
             icon: Icons.local_offer_outlined,
+            imageAsset: 'assets/images/price-tag.png',
+            tintImage: true,
             color: AppTheme.purple,
             title: translate("home.action_discounts"),
             subtitle: translate("home.action_discounts_sub"),
@@ -810,6 +814,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required String subtitle,
     required VoidCallback onTap,
     String? imageAsset,
+    bool tintImage = false,
   }) {
     return Expanded(
       child: GestureDetector(
@@ -827,8 +832,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(14),
                 ),
+                // Line-art images (car-sharing, price-tag) are tinted to the
+                // tile colour; the full-colour package box is left as-is.
                 child: imageAsset != null
-                    ? Image.asset(imageAsset, fit: BoxFit.contain)
+                    ? Image.asset(
+                        imageAsset,
+                        fit: BoxFit.contain,
+                        color: tintImage ? color : null,
+                      )
                     : Icon(icon, color: color, size: 22),
               ),
               const SizedBox(height: 8),
