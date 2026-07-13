@@ -65,6 +65,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/cars/
     - assets/banner/
     - assets/icons/
     - assets/i18n/
