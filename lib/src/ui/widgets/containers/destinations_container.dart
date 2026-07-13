@@ -358,10 +358,9 @@ class DestinationsContainer extends StatelessWidget {
     );
   }
 
-  /// Green strip advertising the parcel price for this trip — the cost to send
-  /// up to 5 kg (price/kg × 5), matching the driver's configured rate.
+  /// Green strip advertising the driver's parcel rate for this trip, shown as
+  /// a per-kilogram price (e.g. "5,000 UZS/kg").
   Widget _buildParcelStrip() {
-    final price = trip.parcel!.pricePerKg * 5;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -385,21 +384,13 @@ class DestinationsContainer extends StatelessWidget {
             ),
           ),
           Text(
-            "${Utils.priceFromNum(price)} ${translate("currency")}",
+            "${Utils.priceFromNum(trip.parcel!.pricePerKg)} "
+            "${translate("currency")}/${translate("parcel.kg")}",
             style: const TextStyle(
               color: AppTheme.green,
               fontSize: 13.5,
               fontFamily: AppTheme.fontFamily,
               fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            translate("home.parcel_price_upto"),
-            style: const TextStyle(
-              color: AppTheme.gray,
-              fontSize: 11,
-              fontFamily: AppTheme.fontFamily,
             ),
           ),
         ],
