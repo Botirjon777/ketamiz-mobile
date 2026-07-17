@@ -9,13 +9,11 @@ import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/menu/main_screen.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
-import 'package:ketamiz/src/ui/widgets/textfield/main_textfield.dart';
+import 'package:ketamiz/src/ui/widgets/textfield/labeled_input_field.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../model/api/apply_driver_response_model.dart';
-import '../../../model/color_model.dart';
 import '../../../utils/input_formatters.dart';
-import '../../../model/event_bus/http_result.dart';
-import '../../../model/vehicle_model.dart';
 import '../../../resources/repository.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/image_helper.dart';
@@ -35,38 +33,20 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
   
   bool isLoading = false;
   int currentStep = 1;
-  int totalSteps = 4;
+  int totalSteps = 2;
 
   // Step 1 Controllers (Driver)
   TextEditingController licenseNumController = TextEditingController();
   TextEditingController licenseExpiryDateController = TextEditingController();
   TextEditingController birthDateController = TextEditingController();
-  
+
   // Step 2 Images (Driver)
   String frontImage = '';
   String backImage = '';
   String passportImage = '';
 
-  // Step 3 Controllers (Vehicle Text)
-  TextEditingController carModelController = TextEditingController();
-  TextEditingController carNumberController = TextEditingController();
-  TextEditingController colorController = TextEditingController();
-  TextEditingController techSerieController = TextEditingController();
-  TextEditingController techPassportController = TextEditingController();
-  int seats = 1;
-
-  // Step 4 Images (Vehicle Images)
-  String techPassportFront = '';
-  String techPassportBack = '';
-  List<XFile> carImages = [];
-  
   DateTime birthDate = DateTime.now().subtract(const Duration(days: 365 * 18));
   DateTime licenseExpiryDate = DateTime.now();
-  
-  VehicleModel selectedVehicle = VehicleModel(id: 0, vehicleName: "");
-  ColorModel selectedColor = ColorModel(titleEn: "", colorCode: Colors.transparent, id: 0, titleRu: '', titleUz: '');
-
-  String vehicleId = "";
 
   @override
   void initState() {
@@ -83,6 +63,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 76,
         leading: GestureDetector(
           onTap: () {
             if (currentStep > 1) {
@@ -138,13 +119,11 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(totalSteps, (index) {
-                      return Row(
-                        children: [
-                          _buildStepIndicator(index + 1),
-                          if (index < totalSteps - 1) const SizedBox(width: 4),
-                        ],
-                      );
+                    children: List.generate(totalSteps * 2 - 1, (index) {
+                      if (index.isEven) {
+                        return _buildStepCircle(index ~/ 2 + 1);
+                      }
+                      return _buildStepConnector((index - 1) ~/ 2 + 1);
                     }),
                   ),
                 ],
@@ -169,8 +148,6 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
                     children: [
                       if (currentStep == 1) _buildStep1(),
                       if (currentStep == 2) _buildStep2(),
-                      if (currentStep == 3) _buildStep3(),
-                      if (currentStep == 4) _buildStep4(),
                       const SizedBox(height: 96),
                     ],
                   ),
@@ -218,21 +195,46 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
 
   String _getAppBarTitle() {
     if (currentStep == 1) return translate("ketamiz.driver_license_details");
-    if (currentStep == 2) return translate("ketamiz.document_upload");
-    if (currentStep == 3) return translate("ketamiz.vehicle_details");
-    return translate("ketamiz.vehicle_photos"); // Needs translation key
+    return translate("ketamiz.document_upload");
   }
-  
-  Widget _buildStepIndicator(int step) {
-    bool isActive = step <= currentStep;
-    double width = (MediaQuery.of(context).size.width - 152) / totalSteps;
+
+  Widget _buildStepCircle(int step) {
+    final bool isCompleted = step < currentStep;
+    final bool isActive = step == currentStep;
+    final Color fillColor = (isCompleted || isActive) ? AppTheme.purple : Colors.white;
+    final Color borderColor = (isCompleted || isActive) ? AppTheme.purple : AppTheme.gray.withOpacity(0.4);
+    final Color textColor = (isCompleted || isActive) ? Colors.white : AppTheme.gray;
     return Container(
-      width: width,
-      height: 4,
+      width: 24,
+      height: 24,
       decoration: BoxDecoration(
-        color: isActive ? AppTheme.purple : AppTheme.gray.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(2),
+        shape: BoxShape.circle,
+        color: fillColor,
+        border: Border.all(color: borderColor, width: 1.5),
       ),
+      child: Center(
+        child: isCompleted
+            ? const Icon(Icons.check, size: 14, color: Colors.white)
+            : Text(
+                '$step',
+                style: TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildStepConnector(int leftStep) {
+    final bool isActive = leftStep < currentStep;
+    return Container(
+      width: 32,
+      height: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: isActive ? AppTheme.purple : AppTheme.gray.withOpacity(0.3),
     );
   }
 
@@ -240,17 +242,30 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
   Widget _buildStep1() {
     return Column(
       children: [
-        MainTextField(
-          hintText: translate("ketamiz.driver_license_number"),
-          icon: Icons.numbers_outlined,
+        // Reference image
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.asset(
+            'assets/images/front-driving-lycence.png',
+            width: double.infinity,
+            fit: BoxFit.fitWidth,
+          ),
+        ),
+        const SizedBox(height: 20),
+        LabeledInputField(
+          title: translate("ketamiz.driver_license_number"),
+          hint: translate("ketamiz.driver_license_number"),
+          icon: Icons.badge_outlined,
           controller: licenseNumController,
           inputFormatters: [DocumentNumberFormatter()],
           keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: 16),
         _buildDateField(
           controller: licenseExpiryDateController,
           label: translate("ketamiz.driver_license_expiry_date"),
+          icon: Icons.date_range_outlined,
           onTap: () {
             BottomDialog.showBirthDate(
               context,
@@ -271,6 +286,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
         _buildDateField(
           controller: birthDateController,
           label: translate("profile.birth_date"),
+          icon: Icons.cake_outlined,
           onTap: () {
             BottomDialog.showBirthDate(
               context,
@@ -287,6 +303,61 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             );
           },
         ),
+        const SizedBox(height: 24),
+        // Support note
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF4F2FF),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppTheme.purple.withOpacity(0.2)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline_rounded, size: 18, color: AppTheme.purple),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 13,
+                      color: AppTheme.black,
+                      height: 1.5,
+                    ),
+                    children: [
+                      TextSpan(text: '${translate("ketamiz.support_note")} '),
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: GestureDetector(
+                          onTap: () async {
+                            final uri = Uri.parse('https://t.me/ketamizcom');
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          child: Text(
+                            translate("ketamiz.support_link_label"),
+                            style: const TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: 13,
+                              color: AppTheme.purple,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                              decorationColor: AppTheme.purple,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const TextSpan(text: '.'),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -294,62 +365,21 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
   Widget _buildDateField({
     required TextEditingController controller,
     required String label,
+    required IconData icon,
     required VoidCallback onTap,
   }) {
-    return Container(
-      height: 66,
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        boxShadow: [
-          BoxShadow(
-            offset: const Offset(0, 4),
-            blurRadius: 100,
-            spreadRadius: 0,
-            color: AppTheme.black.withOpacity(0.05),
-          ),
-        ],
-      ),
-      child: TextField(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-          onTap();
-        },
-        readOnly: true,
-        controller: controller,
-        cursorColor: AppTheme.purple,
-        style: const TextStyle(
-          color: AppTheme.black,
-          fontFamily: AppTheme.fontFamily,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 1,
-          height: 1.5,
-        ),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(
-            color: AppTheme.text,
-            fontFamily: AppTheme.fontFamily,
-          ),
-          filled: true,
-          fillColor: AppTheme.inputFill,
-          prefixIcon: const Icon(
-            Icons.date_range_outlined,
-            color: AppTheme.black,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 20,
-            horizontal: 16,
-          ),
-          border: const OutlineInputBorder(),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: AppTheme.inputBorder),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: AppTheme.purple),
-          ),
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        onTap();
+      },
+      child: AbsorbPointer(
+        child: LabeledInputField(
+          title: label,
+          hint: 'DD/MM/YYYY',
+          icon: icon,
+          controller: controller,
+          textInputAction: TextInputAction.next,
         ),
       ),
     );
@@ -369,7 +399,6 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             _saveToPrefs("driving_front_image", path);
           },
           uploadType: 'front',
-          isSimpleUpload: true,
         ),
         const SizedBox(height: 16),
         _buildImageUpload(
@@ -382,7 +411,6 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             _saveToPrefs("driving_back_image", path);
           },
           uploadType: 'back',
-          isSimpleUpload: true,
         ),
         const SizedBox(height: 16),
         _buildImageUpload(
@@ -395,7 +423,6 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             _saveToPrefs("passport_image", path);
           },
           uploadType: 'passport',
-          isSimpleUpload: true,
         ),
       ],
     );
@@ -406,7 +433,6 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
     required String imagePath,
     required Function(String) onUpload,
     required String uploadType,
-    bool isSimpleUpload = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,8 +444,8 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
             if (imagePath.isEmpty) {
               BottomDialog.showUploadImage(
                 context,
-                onGallery: () => _handleImageSelection(ImageSource.gallery, onUpload, uploadType, isSimpleUpload),
-                onCamera: () => _handleImageSelection(ImageSource.camera, onUpload, uploadType, isSimpleUpload),
+                onGallery: () => _handleImageSelection(ImageSource.gallery, onUpload),
+                onCamera: () => _handleImageSelection(ImageSource.camera, onUpload),
               );
             }
           },
@@ -463,10 +489,6 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
                           backImage = '';
                         } else if (uploadType == 'passport') {
                           passportImage = '';
-                        } else if (uploadType == 'tech_front') {
-                          techPassportFront = '';
-                        } else if (uploadType == 'tech_back') {
-                          techPassportBack = '';
                         }
                       });
                     },
@@ -495,50 +517,17 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
   Future<void> _handleImageSelection(
     ImageSource source,
     Function(String) onUpdate,
-    String type,
-    bool isSimpleUpload,
   ) async {
     final pickedFile = await ImageHelper.pick(source);
     if (pickedFile == null) return;
 
-    if (isSimpleUpload) {
-      // Just stash the local path; upload happens in batch on Step submit.
-      onUpdate(pickedFile.path);
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    HttpResult response;
-    if (type == 'tech_front') {
-      response = await _repository.fetchUploadCarImages(
-          vehicleId, pickedFile.path, '', []);
-    } else if (type == 'tech_back') {
-      response = await _repository.fetchUploadCarImages(
-          vehicleId, '', pickedFile.path, []);
-    } else {
-      response = await _repository.fetchUploadCarImages(
-          vehicleId, '', '', [pickedFile.path]);
-    }
-
-    if (!mounted) return;
-    setState(() => isLoading = false);
-
-    if (response.isSuccess) {
-      final result = response.result;
-      final success = result is Map &&
-          (result['status'] == 'success' || result['status'] == 200);
-      if (success) {
-        onUpdate(pickedFile.path);
-      } else {
-        _showError(translate("ketamiz.upload_failed"));
-      }
-    } else {
-      _showError(translate("auth.connection_failed"));
-    }
+    // Just stash the local path; upload happens in batch on Step submit.
+    onUpdate(pickedFile.path);
   }
 
-  /// Upload all 3 driver doc images in one multipart call (server requires it).
+  /// Upload all 3 driver doc images in one multipart call (server requires it),
+  /// then finalize the driver application. Vehicle info is added separately
+  /// via AddVehicleScreen once the driver application is approved.
   Future<void> _submitStep2() async {
     setState(() => isLoading = true);
 
@@ -556,7 +545,7 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
       final success = result is Map &&
           (result['status'] == 'success' || result['status'] == 200);
       if (success) {
-        setState(() => currentStep++);
+        await _finishDriverApplication();
       } else {
         final message = (result is Map ? result['message']?.toString() : null) ??
             translate("ketamiz.upload_failed");
@@ -567,360 +556,19 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
     }
   }
 
+  Future<void> _finishDriverApplication() async {
+    CustomSnackBar().showSnackBar(context, translate("ketamiz.documents_uploaded"), 1);
 
-  // --- Step 3 UI (Vehicle Text) ---
-  Widget _buildStep3() {
-    return Column(
-      children: [
-        _buildDropdownField(
-          label: translate("profile.car_model"),
-          controller: carModelController,
-          onTap: () {
-            BottomDialog.showSelectCar(context, (value) {
-              if (value.id != 0 && selectedVehicle.id != value.id) {
-                setState(() {
-                  selectedVehicle = value;
-                  carModelController.text = selectedVehicle.vehicleName;
-                });
-              }
-            }, selectedVehicle);
-          },
-          icon: Icons.directions_car,
-        ),
-        const SizedBox(height: 16),
-        MainTextField(
-          hintText: translate("profile.car_number"),
-          icon: Icons.numbers,
-          controller: carNumberController,
-          inputFormatters: [VehiclePlateFormatter()],
-          keyboardType: TextInputType.text,
-        ),
-        const SizedBox(height: 16),
-        _buildDropdownField(
-          label: translate("profile.car_color"),
-          controller: colorController,
-          onTap: () {
-            BottomDialog.showSelectColor(context, (value) {
-              if (value.titleEn.isNotEmpty && selectedColor != value) {
-                setState(() {
-                  selectedColor = value;
-                  colorController.text = value.titleEn;
-                });
-              }
-            }, selectedColor);
-          },
-          icon: Icons.color_lens,
-          suffix: Container(
-            height: 24, width: 24,
-            decoration: BoxDecoration(
-              color: selectedColor.colorCode,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.purple),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            SizedBox(
-              width: 130,
-              child: MainTextField(
-                hintText: translate("ketamiz.tech_serie"),
-                icon: Icons.badge_outlined,
-                controller: techSerieController,
-                inputFormatters: [TechSerieFormatter()],
-                keyboardType: TextInputType.text,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: MainTextField(
-                hintText: translate("ketamiz.tech_number"),
-                icon: Icons.numbers,
-                controller: techPassportController,
-                inputFormatters: [TechNumberFormatter()],
-                keyboardType: TextInputType.number,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _buildSeatCounter(),
-      ],
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool('isDocsAdded', true);
+    prefs.setBool('isDocsVerified', false);
+
+    if (!mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const MainScreen()),
     );
-  }
-
-  Widget _buildSeatCounter() {
-    return Container(
-      height: 66,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white, // or AppTheme.bg if available
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            offset: const Offset(0, 4),
-            blurRadius: 100,
-            spreadRadius: 0,
-            color: AppTheme.black.withOpacity(0.05),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.people_outline, color: AppTheme.black),
-              const SizedBox(width: 12),
-              Text16h500w(title: translate("profile.seats")),
-            ],
-          ),
-          Row(
-            children: [
-              _buildCounterButton(
-                icon: Icons.remove,
-                onTap: () {
-                  if (seats > 1) {
-                    setState(() {
-                      seats--;
-                    });
-                  }
-                },
-              ),
-              SizedBox(
-                width: 40,
-                child: Center(
-                  child: Text(
-                    seats.toString(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.black,
-                    ),
-                  ),
-                ),
-              ),
-              _buildCounterButton(
-                icon: Icons.add,
-                onTap: () {
-                  if (seats < 8) {
-                    setState(() {
-                      seats++;
-                    });
-                  }
-                },
-              ),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCounterButton({required IconData icon, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 32,
-        width: 32,
-        decoration: BoxDecoration(
-          color: AppTheme.purple.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          icon,
-          color: AppTheme.purple,
-          size: 20,
-        ),
-      ),
-    );
-  }
-
-
-  Widget _buildDropdownField({
-    required String label,
-    required TextEditingController controller,
-    required VoidCallback onTap,
-    required IconData icon,
-    Widget? suffix,
-  }) {
-    return Container(
-      height: 66,
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        boxShadow: [
-          BoxShadow(
-             offset: const Offset(0, 4),
-             blurRadius: 100,
-             spreadRadius: 0,
-             color: AppTheme.black.withOpacity(0.05),
-          ),
-        ],
-      ),
-      child: TextField(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-          onTap();
-        },
-        readOnly: true,
-        controller: controller,
-        cursorColor: AppTheme.purple,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        decoration: InputDecoration(
-          labelText: label,
-          filled: true,
-          fillColor: AppTheme.inputFill,
-          prefixIcon: Icon(icon, color: AppTheme.black),
-          suffix: suffix,
-           contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-           border: const OutlineInputBorder(),
-           enabledBorder: OutlineInputBorder(
-             borderRadius: BorderRadius.circular(16),
-             borderSide: const BorderSide(color: AppTheme.inputBorder),
-           ),
-           focusedBorder: OutlineInputBorder(
-             borderRadius: BorderRadius.circular(16),
-             borderSide: const BorderSide(color: AppTheme.purple),
-           ),
-        ),
-      ),
-    );
-  }
-
-  // --- Step 4 UI (Vehicle Images) ---
-  Widget _buildStep4() {
-    return Column(
-      children: [
-        _buildImageUpload(
-          title: "Tech Passport Front",
-          imagePath: techPassportFront,
-          onUpload: (path) {
-            setState(() {
-              techPassportFront = path;
-            });
-          },
-          uploadType: 'tech_front',
-          isSimpleUpload: false,
-        ),
-         const SizedBox(height: 16),
-        _buildImageUpload(
-          title: "Tech Passport Back",
-          imagePath: techPassportBack,
-          onUpload: (path) {
-            setState(() {
-              techPassportBack = path;
-            });
-          },
-          uploadType: 'tech_back',
-          isSimpleUpload: false,
-        ),
-        const SizedBox(height: 24),
-        _buildCarImagesSection(),
-      ],
-    );
-  }
-
-  Widget _buildCarImagesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text16h500w(title: translate("profile.car_images")),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 112,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: carImages.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return GestureDetector(
-                  onTap: () {
-                    BottomDialog.showUploadImage(
-                      context,
-                      onGallery: () => _pickCarImage(ImageSource.gallery),
-                      onCamera: () => _pickCarImage(ImageSource.camera),
-                    );
-                  },
-                  child: Container(
-                    width: 112,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.light,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.purple, width: 2),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.add, size: 40, color: AppTheme.purple),
-                    ),
-                  ),
-                );
-              }
-              return Stack(
-                children: [
-                  Container(
-                    width: 112,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      image: DecorationImage(
-                        image: FileImage(File(carImages[index - 1].path)),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 0, right: 12,
-                    child: GestureDetector(
-                      onTap: () => setState(() => carImages.removeAt(index - 1)),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.5),
-                        ),
-                        child: const Icon(Icons.delete, color: Colors.red, size: 20),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _pickCarImage(ImageSource source) async {
-    try {
-      final XFile? image = await ImageHelper.pick(source);
-      if (image != null) {
-        setState(() => isLoading = true);
-        
-        // Upload immediately
-        var response = await _repository.fetchUploadCarImages(
-            vehicleId, '', '', [image.path]);
-
-        setState(() => isLoading = false);
-
-        if (response.isSuccess) {
-             if(response.result is Map && (response.result['status'] == 'success' || response.result['status'] == 200)) {
-                  setState(() {
-                    carImages.add(image);
-                  });
-             } else {
-                 _showError(translate("ketamiz.upload_failed"));
-             }
-        } else {
-            _showError(translate("auth.connection_failed"));
-        }
-      }
-    } catch (e) {
-      debugPrint("Error picking car image: $e");
-      setState(() => isLoading = false);
-    }
   }
 
   // --- Navigation & Submit ---
@@ -933,15 +581,11 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
           _submitStep1();
         } else if (currentStep == 2) {
           _submitStep2();
-        } else if (currentStep == 3) {
-          _submitStep3();
-        } else if (currentStep == 4) {
-          _submitStep4();
         }
       },
       child: PrimaryButton(
-        title: currentStep == 4 
-            ? translate("ketamiz.submit") 
+        title: currentStep == totalSteps
+            ? translate("ketamiz.submit")
             : translate("next"),
       ),
     );
@@ -965,35 +609,6 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
     }
     if (currentStep == 2) {
       if (frontImage.isEmpty || backImage.isEmpty || passportImage.isEmpty) {
-        _showError(translate("ketamiz.upload_all_docs"));
-        return false;
-      }
-    }
-    if (currentStep == 3) {
-      if (carModelController.text.isEmpty) {
-        _showError(translate("ketamiz.missing_docs"));
-        return false;
-      }
-      final plateLen = carNumberController.text.length;
-      if (plateLen != 10 && plateLen != 11) {
-        _showError(translate("ketamiz.invalid_plate"));
-        return false;
-      }
-      if (selectedColor.id == 0) {
-        _showError(translate("ketamiz.select_color"));
-        return false;
-      }
-      if (techSerieController.text.length != 3) {
-        _showError(translate("ketamiz.invalid_tech_serie"));
-        return false;
-      }
-      if (techPassportController.text.length != 7) {
-        _showError(translate("ketamiz.invalid_tech_number"));
-        return false;
-      }
-    }
-    if (currentStep == 4) {
-      if (techPassportFront.isEmpty || techPassportBack.isEmpty || carImages.isEmpty) {
         _showError(translate("ketamiz.upload_all_docs"));
         return false;
       }
@@ -1031,69 +646,6 @@ class _AddDocsScreenState extends State<AddDocsScreen> {
     } else {
       _showError(translate("auth.connection_failed"));
     }
-  }
-
-  // Step 3 Submit: Vehicle Info
-  Future<void> _submitStep3() async {
-    setState(() => isLoading = true);
-
-    var response = await _repository.fetchAddVehicleInfo(
-      carNumberController.text,
-      selectedVehicle.vehicleName,
-      selectedColor.id,
-      techSerieController.text + techPassportController.text,
-      seats,
-    );
-
-    if (!mounted) return;
-
-    setState(() => isLoading = false);
-
-    if (response.isSuccess) {
-      if (response.result is Map && response.result['status'] == 'success' && response.result['data'] != null) {
-        final newVehicleId = response.result['data']['id']?.toString();
-
-        if (newVehicleId != null && newVehicleId.isNotEmpty) {
-          vehicleId = newVehicleId;
-          setState(() {
-            currentStep++;
-          });
-        } else {
-          _showError(translate("ketamiz.vehicle_id_missing"));
-        }
-      } else {
-        final errorMessage = (response.result is Map ? response.result['message']?.toString() : null) ?? translate("ketamiz.error");
-        _showError(errorMessage);
-      }
-    } else {
-      _showError(translate("auth.connection_failed"));
-    }
-  }
-
-  // Step 4 Submit: Vehicle Images (Final)
-  Future<void> _submitStep4() async {
-    if (vehicleId.isEmpty) {
-       _showError(translate("ketamiz.vehicle_id_missing"));
-       return;
-    }
-
-    // Images are already uploaded one by one. Check if they exist locally to confirm flow.
-    // If we wanted to be stricter, we'd verify with the backend, but local check is fine for now.
-    
-    // Finalize / Navigate
-    CustomSnackBar().showSnackBar(context, translate("ketamiz.documents_uploaded"), 1);
-    
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool('isDocsAdded', true);
-    prefs.setBool('isDocsVerified', false);
-    prefs.setString("vehicle_id", vehicleId);
-
-    if (!mounted) return;
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MainScreen()),
-    );
   }
 
   void _saveToPrefs(String key, String value) async {

@@ -1,0 +1,4 @@
+# App identifier and Apple team details.
+# No Apple ID is needed on CI (we use the App Store Connect API key).
+app_identifier("uz.ketamiz.app")
+team_id("DJ6Z29BM4D")

@@ -1,11 +1,11 @@
 name: Release to Play Store
 
-# Tag (masalan v1.0.2) push qilinganda ishga tushadi.
-# Imzolangan AAB build qilib, Google Play (internal track) ga yuklaydi.
+# Runs when a tag (e.g. v1.0.2) is pushed.
+# Builds a signed AAB and uploads it to Google Play (production track).
 on:
   push:
     tags:
-      - 'v*'   # v1.0.2, v2.0.0 va h.k.
+      - 'v*'   # v1.0.2, v2.0.0, etc.
 
 jobs:
   build-and-deploy:
@@ -31,14 +31,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # --- Keystore'ni Secrets'dan tiklash ---
-      # KEYSTORE_BASE64 = upload-keystore.jks faylining base64 ko'rinishi
+      # --- Restore the keystore from Secrets ---
+      # KEYSTORE_BASE64 = base64-encoded upload-keystore.jks
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
 
-      # key.properties faylini Secrets'dagi parollardan yaratish.
-      # storeFile yo'li build.gradle'dagi bilan bir xil bo'lishi shart: ../upload-keystore.jks
+      # Recreate key.properties from the passwords stored in Secrets.
+      # The storeFile path must match build.gradle: ../upload-keystore.jks
       - name: Create key.properties
         run: |
           cat > android/key.properties <<EOF
@@ -51,18 +51,19 @@ jobs:
       - name: Build App Bundle
         run: flutter build appbundle --release
 
-      # --- Google Play'ga yuklash ---
-      # SERVICE_ACCOUNT_JSON = Play Console service account kalitining to'liq JSON matni
-      - name: Upload to Google Play (internal track)
+      # --- Upload to Google Play ---
+      # SERVICE_ACCOUNT_JSON = full JSON of the Play Console service account key
+      - name: Upload to Google Play (production)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: uz.ketamiz.app
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: internal           # avval internal'da sinab ko'ring, keyin production'ga ko'tarasiz
-          status: completed
+          track: production         # production track: goes to review automatically
+          status: inProgress        # staged rollout, not a full release
+          userFraction: 0.2         # reaches 20% of users first
 
-      # AAB'ni GitHub'da ham saqlash (zaxira / qo'lda yuklash uchun)
+      # Also keep the AAB on GitHub (backup / manual upload)
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:

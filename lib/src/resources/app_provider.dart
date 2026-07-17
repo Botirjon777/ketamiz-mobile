@@ -183,6 +183,31 @@ class ApiProvider {
     }
   }
 
+  /// PATCH Request (JSON)
+  static Future<HttpResult> patchRequest(
+      String url, [Map<String, dynamic> body = const {}]) async {
+    final dio = _dio;
+    final headers = await _getReqHeader();
+
+    try {
+      Response response = await dio.patch(
+        url,
+        data: body,
+        options: Options(
+          headers: headers,
+          sendTimeout: durationTimeout,
+          receiveTimeout: durationTimeout,
+          validateStatus: (status) => true,
+        ),
+      );
+      return _processResponse(response);
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return _handleGenericError(e);
+    }
+  }
+
   // Legacy postRequest shim (deprecating but keeping if internal usage exists,
   // though we will replace all calls)
   // Replaced by postFormRequest or postJsonRequest usage below.
@@ -229,6 +254,44 @@ class ApiProvider {
 
     final data = {
       "phone": phone,
+    };
+    return await postRequest(url, data);
+  }
+
+  /// Send Reset Code Post — step 1 of the password-reset flow.
+  Future<HttpResult> fetchSendResetCode(String phone) async {
+    String url = '$baseUrl/auth/send-reset-code';
+
+    phone = phone.replaceAll(' ', '').replaceAll('-', '').replaceAll('(', '').replaceAll(')', '');
+    if (!phone.startsWith('+')) {
+      phone = '+$phone';
+    }
+
+    final data = {
+      "phone": phone,
+    };
+    return await postRequest(url, data);
+  }
+
+  /// Reset Password Post — step 2 of the password-reset flow.
+  Future<HttpResult> fetchResetPassword(
+    String phone,
+    String verificationCode,
+    String password,
+    String passwordConfirmation,
+  ) async {
+    String url = '$baseUrl/auth/reset-password';
+
+    phone = phone.replaceAll(' ', '').replaceAll('-', '').replaceAll('(', '').replaceAll(')', '');
+    if (!phone.startsWith('+')) {
+      phone = '+$phone';
+    }
+
+    final data = {
+      "phone": phone,
+      "verification_code": verificationCode,
+      "password": password,
+      "password_confirmation": passwordConfirmation,
     };
     return await postRequest(url, data);
   }
@@ -294,6 +357,27 @@ class ApiProvider {
     return await postRequest(url, {});
   }
 
+  /// Register / update this device's FCM token so the backend can push to it.
+  /// Requires a valid JWT (auth header is attached automatically).
+  Future<HttpResult> fetchRegisterDeviceToken(
+    String deviceToken,
+    String devicePlatform,
+  ) async {
+    String url = '$baseUrl/device-token';
+    final data = {
+      "device_token": deviceToken,
+      "device_platform": devicePlatform,
+    };
+    return await postRequest(url, data);
+  }
+
+  /// Remove this device's FCM token (call on logout while the JWT is still
+  /// valid). The backend resolves the token from the authenticated user.
+  Future<HttpResult> fetchDeleteDeviceToken() async {
+    String url = '$baseUrl/device-token';
+    return await deleteRequest(url);
+  }
+
   /// Update User Language Post
   Future<HttpResult> fetchUpdateLanguage(String language) async {
     String url = '$baseUrl/auth/update-user-language';
@@ -324,6 +408,102 @@ class ApiProvider {
     return await getRequest(url);
   }
 
+  /// Get all broadcast messages (notifications) for the current user.
+  Future<HttpResult> fetchBroadcasts() async {
+    return await getRequest('$baseUrl/broadcasts');
+  }
+
+  /// Get a single broadcast message by id.
+  Future<HttpResult> fetchBroadcast(int id) async {
+    return await getRequest('$baseUrl/broadcasts/$id');
+  }
+
+  // ── Parcels (posilka) ─────────────────────────────────────────────────────
+
+  /// Parcel types for the send-parcel form.
+  Future<HttpResult> fetchParcelTypes() async {
+    return await getRequest('$baseUrl/parcel-types');
+  }
+
+  /// Client: create a parcel booking on a trip. Optional dimensions/description
+  /// are omitted when not provided so backend validation passes.
+  Future<HttpResult> fetchCreateParcelBooking({
+    required int tripId,
+    required int parcelTypeId,
+    required double weight,
+    required String receiverPhone,
+    required String pickupLat,
+    required String pickupLong,
+    required String dropoffLat,
+    required String dropoffLong,
+    int? length,
+    int? width,
+    int? height,
+    String? description,
+  }) async {
+    String url = '$baseUrl/client/parcel-bookings';
+    final data = <String, dynamic>{
+      "trip_id": tripId,
+      "parcel_type_id": parcelTypeId,
+      "weight": weight,
+      "receiver_phone": receiverPhone,
+      "pickup_lat": pickupLat,
+      "pickup_long": pickupLong,
+      "dropoff_lat": dropoffLat,
+      "dropoff_long": dropoffLong,
+      if (length != null) "length": length,
+      if (width != null) "width": width,
+      if (height != null) "height": height,
+      if (description != null && description.trim().isNotEmpty)
+        "parcel_description": description.trim(),
+    };
+    return await postRequest(url, data);
+  }
+
+  /// Client: update pickup/dropoff coordinates on an existing parcel booking
+  /// (only while the trip hasn't started yet).
+  Future<HttpResult> fetchUpdateParcelLocation({
+    required int bookingId,
+    required String pickupLat,
+    required String pickupLong,
+    required String dropoffLat,
+    required String dropoffLong,
+  }) async {
+    String url = '$baseUrl/client/parcel-bookings/$bookingId/location';
+    final data = <String, dynamic>{
+      "pickup_lat": pickupLat,
+      "pickup_long": pickupLong,
+      "dropoff_lat": dropoffLat,
+      "dropoff_long": dropoffLong,
+    };
+    return await patchRequest(url, data);
+  }
+
+  /// Client: my sent parcels (paginated).
+  Future<HttpResult> fetchClientParcelBookings() async {
+    return await getRequest('$baseUrl/client/parcel-bookings');
+  }
+
+  /// Client: a single parcel booking.
+  Future<HttpResult> fetchClientParcelBooking(int id) async {
+    return await getRequest('$baseUrl/client/parcel-bookings/$id');
+  }
+
+  /// Client: cancel my parcel (full refund when it was confirmed).
+  Future<HttpResult> fetchCancelParcelBooking(int id) async {
+    return await deleteRequest('$baseUrl/client/parcel-bookings/$id/cancel');
+  }
+
+  /// Driver: all parcels received across my trips.
+  Future<HttpResult> fetchDriverParcelBookings() async {
+    return await getRequest('$baseUrl/driver/parcel-bookings');
+  }
+
+  /// Driver: parcels received for a specific trip.
+  Future<HttpResult> fetchDriverParcelBookingsByTrip(int tripId) async {
+    return await getRequest('$baseUrl/driver/parcel-bookings/trip/$tripId');
+  }
+
   /// Get all regions (bare JSON array: [{id, name_uz, name_ru, name_en}])
   Future<HttpResult> fetchRegions() async {
     return await getRequest('$baseUrl/regions');
@@ -349,8 +529,9 @@ class ApiProvider {
     String toQuarterId,
     DateTime departureDate,
     DateTime? returnDate,
-    bool? isRoundTrip,
-  ) async {
+    bool? isRoundTrip, {
+    bool acceptsParcels = false,
+  }) async {
     isRoundTrip ??= false;
 
     final queryParams = <String, String>{
@@ -360,6 +541,8 @@ class ApiProvider {
       // time never excludes trips departing earlier that same day.
       'departure_date': _formatBackendDate(departureDate),
     };
+    // Narrow to parcel-accepting trips when the user is sending a parcel.
+    if (acceptsParcels) queryParams['accepts_parcels'] = '1';
     // District/quarter are optional — only narrow the search when provided.
     // This lets region-to-region searches (district/quarter = "0") work.
     if (fromDistrictId != "0") queryParams['start_district_id'] = fromDistrictId;
@@ -794,10 +977,17 @@ class ApiProvider {
       String startQuarterId,
       String endRegionId,
       String endDistrictId,
-      String endQuarterId,
-      ) async {
+      String endQuarterId, {
+      bool acceptsParcels = false,
+      double? parcelMaxWeight,
+      double? parcelPricePerKg,
+      int? parcelMaxLength,
+      int? parcelMaxWidth,
+      int? parcelMaxHeight,
+      List<int> parcelTypeIds = const [],
+      }) async {
     String url = '$baseUrl/driver/trips';
-    final data = {
+    final data = <String, dynamic>{
       "vehicle_id": vehicleId,
       "start_time": _formatBackendDateTime(startDate),
       "end_time": _formatBackendDateTime(endDate),
@@ -813,7 +1003,18 @@ class ApiProvider {
       "start_long": startLong,
       "end_lat": endLat,
       "end_long": endLong,
+      "accepts_parcels": acceptsParcels,
     };
+    if (acceptsParcels) {
+      data["parcel"] = {
+        "max_weight": parcelMaxWeight,
+        "price_per_kg": parcelPricePerKg,
+        if (parcelMaxLength != null) "max_length": parcelMaxLength,
+        if (parcelMaxWidth != null) "max_width": parcelMaxWidth,
+        if (parcelMaxHeight != null) "max_height": parcelMaxHeight,
+        "type_ids": parcelTypeIds,
+      };
+    }
     return await postRequest(url, data);
   }
 
@@ -827,6 +1028,13 @@ class ApiProvider {
   Future<HttpResult> fetchCancelDriverTrip(String tripId) async {
     String url = '$baseUrl/driver/trips/cancel-trip/$tripId';
     return await deleteRequest(url);
+  }
+
+  /// Toggle whether this trip still accepts new parcels (e.g. the driver
+  /// turns it off once the car has no room left).
+  Future<HttpResult> fetchToggleParcelAcceptance(String tripId) async {
+    String url = '$baseUrl/driver/trips/$tripId/toggle-parcel-acceptance';
+    return await patchRequest(url);
   }
 
   /// Get Card List

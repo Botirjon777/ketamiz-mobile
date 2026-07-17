@@ -1,0 +1,6 @@
+# Pin fastlane to a stable version so local and CI use the same one.
+# Install with: bundle install
+source "https://rubygems.org"
+
+gem "fastlane"
+gem "cocoapods"

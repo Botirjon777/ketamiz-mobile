@@ -7,8 +7,14 @@ import 'package:ketamiz/src/ui/menu/home/map_single_screen.dart';
 import 'package:ketamiz/src/ui/menu/home/payment_screen.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/map_select_screen.dart';
 import 'package:ketamiz/src/ui/menu/main_screen.dart';
+import 'package:ketamiz/src/ui/menu/parcels/parcel_detail_screen.dart';
+import 'package:ketamiz/src/ui/menu/parcels/parcel_status.dart';
+import 'package:ketamiz/src/ui/menu/parcels/send_parcel_screen.dart';
+import '../../../model/api/parcel_model.dart';
+import 'package:ketamiz/src/ui/widgets/buttons/slide_to_confirm_button.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:ketamiz/src/ui/widgets/containers/passengers_container.dart';
+import 'package:ketamiz/src/ui/widgets/parcel_image.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:ketamiz/src/utils/utils.dart';
@@ -106,6 +112,15 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
   /// Parsed bookings for the driver view.
   List<_BookedPassenger> _bookedPassengers = [];
 
+  /// Parcels booked on this trip (driver view). Loaded only when the trip
+  /// accepts parcels; the section is hidden until at least one exists.
+  List<ParcelBooking> _tripParcels = [];
+
+  /// Whether this trip currently accepts new parcels (driver view). Starts
+  /// from the trip payload and flips locally once the driver toggles it.
+  late bool _acceptsParcels = widget.trip.acceptsParcels;
+  bool _togglingParcels = false;
+
   @override
   void initState() {
     super.initState();
@@ -114,8 +129,55 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     setLocations();
     if (widget.isDriver) {
       _bookedPassengers = _parseBookings(widget.bookings);
+      if (widget.trip.acceptsParcels) _loadTripParcels();
     } else {
       _initFirstPassenger();
+    }
+  }
+
+  /// The endpoint is a blind toggle (no target value in the request) — it
+  /// always flips whatever the server currently has, and echoes the actual
+  /// resulting state back in `data.accepts_parcels`, which is what drives the
+  /// switch rather than the tap itself.
+  Future<void> _toggleParcelAcceptance(bool _) async {
+    setState(() => _togglingParcels = true);
+
+    final response = await Repository()
+        .fetchToggleParcelAcceptance(widget.trip.id.toString());
+
+    if (!mounted) return;
+    setState(() => _togglingParcels = false);
+
+    if (response.isSuccess) {
+      final result = response.result;
+      final data = result is Map ? result['data'] : null;
+      final accepts = data is Map ? data['accepts_parcels'] : null;
+      final newValue = accepts == true || accepts == 1 || accepts?.toString() == '1';
+      setState(() => _acceptsParcels = newValue);
+      CustomSnackBar().showSnackBar(
+        context,
+        newValue
+            ? translate("parcel.acceptance_on")
+            : translate("parcel.acceptance_off"),
+        1,
+      );
+    } else {
+      final msg = (response.result is Map
+              ? response.result['message']?.toString()
+              : null) ??
+          translate("auth.something_went_wrong");
+      CustomSnackBar().showSnackBar(context, msg, 2);
+    }
+  }
+
+  Future<void> _loadTripParcels() async {
+    final response =
+        await Repository().fetchDriverParcelBookingsByTrip(widget.trip.id);
+    if (!mounted) return;
+    if (response.isSuccess) {
+      setState(() {
+        _tripParcels = ParcelBooking.listFromResult(response.result);
+      });
     }
   }
 
@@ -528,10 +590,36 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
                 if (widget.isDriver) ...[
                   const SizedBox(height: 16),
                   _buildBookedPassengersCard(),
+                  // Let the driver turn parcel acceptance on/off for this
+                  // trip (e.g. no room left in the car) — only for trips
+                  // configured to accept parcels and not yet finished.
+                  if (widget.trip.parcel != null &&
+                      _status != 'completed' &&
+                      _status != 'canceled' &&
+                      _status != 'cancelled') ...[
+                    const SizedBox(height: 16),
+                    _buildParcelAcceptanceCard(),
+                  ],
+                  // Parcels booked on this trip — only when the driver accepts
+                  // parcels and at least one is booked.
+                  if (_acceptsParcels && _tripParcels.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _buildTripParcelsCard(),
+                  ],
                   const SizedBox(height: 16),
                   _buildCancelInfoCard(),
                   const SizedBox(height: 12),
                   _buildDriverTermsButton(),
+                ],
+                // Send-parcel entry: client view, active trip that accepts
+                // parcels, and not the viewer's own trip.
+                if (!widget.isDriver &&
+                    _isActive &&
+                    !_isOwnTrip &&
+                    widget.trip.acceptsParcels &&
+                    widget.trip.parcel != null) ...[
+                  const SizedBox(height: 16),
+                  _buildSendParcelCard(),
                 ],
                 // Passenger form exists only for booking: active trip,
                 // client view, and not the viewer's own trip.
@@ -1146,6 +1234,73 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     );
   }
 
+  // ── Send parcel entry (client view) ────────────────────────────────────────
+  Widget _buildSendParcelCard() {
+    final parcel = widget.trip.parcel!;
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SendParcelScreen(trip: widget.trip),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.purple.withValues(alpha: 0.3)),
+          boxShadow: [
+            BoxShadow(
+              offset: const Offset(0, 4),
+              blurRadius: 16,
+              color: AppTheme.black.withValues(alpha: 0.06),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.purple.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const ParcelImage(size: 26),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text16h500w(title: translate("parcel.send_parcel")),
+                  const SizedBox(height: 2),
+                  Text(
+                    translate("parcel.send_parcel_subtitle", args: {
+                      "price":
+                          "${Utils.priceFromNum(parcel.pricePerKg)} ${translate("currency")}",
+                    }),
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 12.5,
+                      color: AppTheme.gray,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppTheme.purple, size: 22),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Passenger card (client view) ───────────────────────────────────────────
   Widget _buildModeSelector() {
     Widget chip(_BookingMode mode, String label) {
@@ -1397,6 +1552,180 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
     );
   }
 
+  // ── Parcel acceptance toggle (driver view) ──────────────────────────────────
+  Widget _buildParcelAcceptanceCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.06),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const ParcelImage(size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text16h500w(title: translate("parcel.accept_parcels")),
+                const SizedBox(height: 2),
+                Text14h400w(
+                  title: translate("parcel.accept_parcels_hint"),
+                  color: AppTheme.gray,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _togglingParcels
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.purple),
+                  ),
+                )
+              : Switch.adaptive(
+                  value: _acceptsParcels,
+                  activeTrackColor: AppTheme.purple,
+                  onChanged: _toggleParcelAcceptance,
+                ),
+        ],
+      ),
+    );
+  }
+
+  // ── Parcels card (driver view) ─────────────────────────────────────────────
+  Widget _buildTripParcelsCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            color: AppTheme.black.withValues(alpha: 0.06),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text16h500w(title: translate("parcel.trip_parcels")),
+              ),
+              Text(
+                "${_tripParcels.length}",
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.purple,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...List.generate(_tripParcels.length, (i) {
+            final p = _tripParcels[i];
+            return Container(
+              margin: EdgeInsets.only(
+                  bottom: i == _tripParcels.length - 1 ? 0 : 10),
+              child: _buildTripParcelRow(p),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTripParcelRow(ParcelBooking p) {
+    final typeAndWeight = [
+      if (p.type != null) p.type!.name,
+      "${Utils.weightFormat(p.weight)} ${translate("parcel.kg")}",
+    ].join(" · ");
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ParcelDetailScreen(
+            bookingId: p.id,
+            initial: p,
+            isDriver: true,
+          ),
+        ),
+      ),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppTheme.light,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const ParcelImage(size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text14h400w(title: typeAndWeight),
+                  if (p.receiverPhone.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text14h400w(
+                        title: p.receiverPhone, color: AppTheme.gray),
+                  ],
+                  const SizedBox(height: 6),
+                  ParcelStatusBadge(status: p.status),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  "${Utils.priceFromNum(p.totalPrice)} ${translate("currency")}",
+                  style: const TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Icon(Icons.chevron_right_rounded,
+                    size: 18, color: AppTheme.gray),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDriverTermsButton() {
     return GestureDetector(
       onTap: () {
@@ -1454,38 +1783,61 @@ class _TripDetailsScreenState extends State<TripDetailsScreen> {
           ),
         ],
       ),
-      child: GestureDetector(
-        onTap: _isCancelling ? null : _cancelTrip,
-        child: Container(
-          height: 52,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppTheme.red, width: 1.5),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SlideToConfirmButton(
+            label: translate("ketamiz.slide_to_start"),
+            onConfirmed: _openGoogleMapsNavigation,
           ),
-          child: Center(
-            child: _isCancelling
-                ? const SizedBox(
-                    height: 22,
-                    width: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppTheme.red,
-                    ),
-                  )
-                : Text(
-                    translate("ketamiz.cancel_trip"),
-                    style: const TextStyle(
-                      color: AppTheme.red,
-                      fontSize: 15,
-                      fontFamily: AppTheme.fontFamily,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: _isCancelling ? null : _cancelTrip,
+            child: Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.red, width: 1.5),
+              ),
+              child: Center(
+                child: _isCancelling
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.red,
+                        ),
+                      )
+                    : Text(
+                        translate("ketamiz.cancel_trip"),
+                        style: const TextStyle(
+                          color: AppTheme.red,
+                          fontSize: 15,
+                          fontFamily: AppTheme.fontFamily,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
+  }
+
+  /// Opens the backend-provided (or locally built) Google Maps directions
+  /// link — see [_googleMapsUrl] — in the external Maps app.
+  Future<void> _openGoogleMapsNavigation() async {
+    final url = _googleMapsUrl;
+    if (url.isEmpty) return;
+    final uri = Uri.parse(url);
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+    }
   }
 
   Future<void> _cancelTrip() async {

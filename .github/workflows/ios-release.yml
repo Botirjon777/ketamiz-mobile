@@ -1,0 +1,77 @@
+name: iOS Release to TestFlight
+
+# Runs when an 'ios-v*' tag is pushed (kept separate from the Android tag).
+# For example: ios-v1.0.2
+on:
+  push:
+    tags:
+      - 'ios-v*'
+  workflow_dispatch:   # allows running manually from the Actions tab
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy IPA
+    runs-on: macos-latest   # iOS builds require a macOS runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Apple now requires the iOS 26 SDK (Xcode 26+) for App Store uploads.
+      # The runner defaults to an older Xcode, so pick the newest installed
+      # Xcode 26.x.
+      - name: Select Xcode 26
+        run: |
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XC" ]; then
+            echo "Xcode 26 not found. Available versions:"
+            ls -d /Applications/Xcode_*.app
+            exit 1
+          fi
+          echo "Selecting: $XC"
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.9
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Setup Ruby (fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: ios
+
+      # Generates Flutter's files (Generated.xcconfig, etc.) and runs pod
+      # install in the right order. Without this the Xcode archive fails.
+      - name: Prepare iOS build config
+        run: flutter build ios --release --no-codesign --config-only
+
+      # Load the read-only SSH deploy key for the certs repo into ssh-agent.
+      - name: Setup SSH deploy key for certs repo
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.MATCH_SSH_PRIVATE_KEY }}
+
+      - name: Build & upload to TestFlight
+        working-directory: ios
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+        run: bundle exec fastlane ios beta
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ipa
+          path: ios/*.ipa
+          retention-days: 30

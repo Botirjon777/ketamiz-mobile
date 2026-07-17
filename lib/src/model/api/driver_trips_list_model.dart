@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'parcel_model.dart';
+
 DriverTripsListModel driverTripsListModelFromJson(String str) =>
     DriverTripsListModel.fromJson(json.decode(str));
 
@@ -91,6 +93,9 @@ class DriverTripModel {
   IngPoint startingPoint;
   IngPoint endingPoint;
   List<dynamic> bookings;
+  // Parcel (posilka) config — present when the trip accepts parcels.
+  bool acceptsParcels;
+  ParcelInfo? parcel;
 
   DriverTripModel({
     required this.id,
@@ -125,6 +130,8 @@ class DriverTripModel {
     required this.startingPoint,
     required this.endingPoint,
     required this.bookings,
+    this.acceptsParcels = false,
+    this.parcel,
   });
 
   factory DriverTripModel.fromJson(Map<String, dynamic> json) =>
@@ -171,6 +178,10 @@ class DriverTripModel {
         bookings: json["bookings"] is List
             ? List<dynamic>.from((json["bookings"] as List).map((x) => x))
             : <dynamic>[],
+        acceptsParcels: json["accepts_parcels"] == true ||
+            json["accepts_parcels"] == 1 ||
+            json["accepts_parcels"]?.toString() == "1",
+        parcel: ParcelInfo.maybeFromJson(json["parcel"]),
       );
 
   Map<String, dynamic> toJson() => {
@@ -200,6 +211,7 @@ class DriverTripModel {
         "starting_point": startingPoint.toJson(),
         "ending_point": endingPoint.toJson(),
         "bookings": List<dynamic>.from(bookings.map((x) => x)),
+        "accepts_parcels": acceptsParcels,
       };
 
   factory DriverTripModel.defaultTrip() => DriverTripModel(

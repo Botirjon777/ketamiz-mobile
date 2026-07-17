@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'parcel_model.dart';
+
 List<TripListModel> tripListModelFromJson(String str) => List<TripListModel>.from(json.decode(str).map((x) => TripListModel.fromJson(x)));
 
 String tripListModelToJson(List<TripListModel> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
@@ -37,6 +39,9 @@ class TripListModel {
   DateTime updatedAt;
   TripDriver driver;
   TripVehicle vehicle;
+  // Parcel (posilka) config — present when the trip accepts parcels.
+  bool acceptsParcels;
+  ParcelInfo? parcel;
 
   TripListModel({
     required this.id,
@@ -69,6 +74,8 @@ class TripListModel {
     required this.updatedAt,
     required this.driver,
     required this.vehicle,
+    this.acceptsParcels = false,
+    this.parcel,
   });
 
   factory TripListModel.fromJson(Map<String, dynamic> json) {
@@ -124,6 +131,10 @@ class TripListModel {
               color: CarColor(
                   id: 0, titleUz: "", titleRu: "", titleEn: "", code: ""),
             ),
+      acceptsParcels: json["accepts_parcels"] == true ||
+          json["accepts_parcels"] == 1 ||
+          json["accepts_parcels"]?.toString() == "1",
+      parcel: ParcelInfo.maybeFromJson(json["parcel"]),
     );
   }
 

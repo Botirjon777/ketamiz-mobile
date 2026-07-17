@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "642705767031",
+    "project_id": "ketamiz-435ea",
+    "storage_bucket": "ketamiz-435ea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:642705767031:android:451f5f3d3d8c0cc0c3a472",
+        "android_client_info": {
+          "package_name": "uz.ketamiz.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbqosnRfLaKegiVGzOhjmlh1n76vW4W4I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

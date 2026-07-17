@@ -1,0 +1,112 @@
+# Fastlane lanes for building and distributing the iOS app.
+# CI runs `bundle exec fastlane ios beta` (see .github/workflows/ios-release.yml).
+
+default_platform(:ios)
+
+platform :ios do
+  # Build an App Store Connect API key from the values provided via Secrets.
+  # The ENV variables are set by the GitHub Actions workflow.
+  def asc_api_key
+    app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_content: ENV["APP_STORE_CONNECT_KEY_P8"],
+      is_key_content_base64: false,
+      in_house: false
+    )
+  end
+
+  # Restore the distribution certificate + provisioning profile via Match.
+  # On CI the runner keychain is locked, so create a temporary keychain and
+  # install the identity into it; locally the login keychain is used.
+  def sync_signing(api_key)
+    if ENV["CI"]
+      keychain_name = "fastlane_tmp.keychain"
+      keychain_password = "ci_temp_password"
+      create_keychain(
+        name: keychain_name,
+        password: keychain_password,
+        default_keychain: true,
+        unlock: true,
+        timeout: 3600,
+        lock_when_sleeps: false
+      )
+      match(
+        type: "appstore",
+        readonly: true,
+        api_key: api_key,
+        keychain_name: keychain_name,
+        keychain_password: keychain_password
+      )
+    else
+      match(type: "appstore", readonly: true, api_key: api_key)
+    end
+
+    # The project ships with CODE_SIGN_STYLE=Automatic, but Match uses manual
+    # provisioning. Switch the Runner target to manual signing with the Match
+    # profile before building, otherwise the archive fails.
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: "DJ6Z29BM4D",
+      code_sign_identity: "Apple Distribution",
+      bundle_identifier: "uz.ketamiz.app",
+      profile_name: "match AppStore uz.ketamiz.app",
+      targets: ["Runner"]
+    )
+  end
+
+  # Build the signed App Store IPA.
+  def build_ipa
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+      export_options: {
+        signingStyle: "manual",
+        provisioningProfiles: {
+          "uz.ketamiz.app" => "match AppStore uz.ketamiz.app"
+        }
+      }
+    )
+  end
+
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    api_key = asc_api_key
+    sync_signing(api_key)
+    build_ipa
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  # NOT WIRED INTO CI YET — for future automatic App Store releases.
+  #
+  # Before enabling, App Store Connect must be fully configured:
+  #   - Metadata (description, keywords, category, privacy policy URL)
+  #   - Screenshots (for every required device size)
+  #   - App Privacy questionnaire, age rating, export compliance
+  #   - The first version submitted manually at least once
+  #
+  # To enable: in ios-release.yml replace `fastlane ios beta` with
+  # `fastlane ios release`.
+  desc "Build, upload to the App Store and submit for review"
+  lane :release do
+    api_key = asc_api_key
+    sync_signing(api_key)
+    build_ipa
+    upload_to_app_store(
+      api_key: api_key,
+      submit_for_review: true,   # queue for App Review automatically
+      automatic_release: true,   # release publicly once review passes
+      force: true,               # skip the metadata HTML preview prompt
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        export_compliance_uses_encryption: false,
+        add_id_info_uses_idfa: false
+      }
+    )
+  end
+end

@@ -72,8 +72,8 @@ class _ResponsePopupWidgetState extends State<_ResponsePopupWidget> with SingleT
   Widget build(BuildContext context) {
     final isSuccess = widget.status == 'success';
     final mainColor = isSuccess ? AppTheme.green : AppTheme.red;
-    final backgroundColor = isSuccess ? AppTheme.green : AppTheme.red.withOpacity(0.1);
-    final textColor = isSuccess ? Colors.white : AppTheme.red;
+    final backgroundColor = mainColor;
+    final textColor = Colors.white;
     final icon = isSuccess ? Icons.check_circle_outline : Icons.error_outline;
 
     return Positioned(
@@ -92,15 +92,13 @@ class _ResponsePopupWidgetState extends State<_ResponsePopupWidget> with SingleT
                 color: backgroundColor,
                 border: Border.all(color: mainColor),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: isSuccess
-                    ? [
-                        BoxShadow(
-                          color: AppTheme.green.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: mainColor.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 children: [

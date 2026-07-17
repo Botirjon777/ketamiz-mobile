@@ -1,12 +1,13 @@
 name: CI
 
-# Har bir PR va main'ga push'da kodni tekshiradi.
-# Maxfiy fayllar (keystore) kerak emas — faqat statik tahlil va testlar.
+# Checks the code on every PR and push to main.
+# No secrets needed (no keystore) — static analysis and tests only.
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:   # allows running manually from the Actions tab
 
 jobs:
   analyze-and-test:
@@ -26,12 +27,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Format mos kelmasa CI'ni qizil qilmaydi, faqat log'da ko'rsatadi.
+      # Formatting mismatches don't fail CI; they're only reported in the log.
       - name: Verify formatting (warning only)
         continue-on-error: true
         run: dart format --output=none --set-exit-if-changed .
 
-      # error/warning'da fail bo'ladi; info/deprecation faqat log'da ko'rinadi.
+      # Fails on errors/warnings; info/deprecation only show in the log.
       - name: Analyze
         run: flutter analyze --no-fatal-infos
 

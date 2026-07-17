@@ -30,6 +30,22 @@ class Repository {
   Future<HttpResult> fetchVerificationResend(String phone) =>
       apiProvider.fetchVerificationResend(phone);
 
+  Future<HttpResult> fetchSendResetCode(String phone) =>
+      apiProvider.fetchSendResetCode(phone);
+
+  Future<HttpResult> fetchResetPassword(
+    String phone,
+    String verificationCode,
+    String password,
+    String passwordConfirmation,
+  ) =>
+      apiProvider.fetchResetPassword(
+        phone,
+        verificationCode,
+        password,
+        passwordConfirmation,
+      );
+
   Future<HttpResult> fetchVerifyCode(String phone, String code) =>
       apiProvider.fetchVerifyCode(phone, code);
 
@@ -47,6 +63,82 @@ class Repository {
       apiProvider.fetchUpdateProfile(firstName, lastName, fatherName, email);
 
   Future<HttpResult> fetchLogout() => apiProvider.fetchLogout();
+
+  Future<HttpResult> fetchRegisterDeviceToken(
+    String deviceToken,
+    String devicePlatform,
+  ) =>
+      apiProvider.fetchRegisterDeviceToken(deviceToken, devicePlatform);
+
+  Future<HttpResult> fetchDeleteDeviceToken() =>
+      apiProvider.fetchDeleteDeviceToken();
+
+  Future<HttpResult> fetchBroadcasts() => apiProvider.fetchBroadcasts();
+
+  Future<HttpResult> fetchBroadcast(int id) => apiProvider.fetchBroadcast(id);
+
+  // ── Parcels ────────────────────────────────────────────────────────────────
+
+  Future<HttpResult> fetchParcelTypes() => apiProvider.fetchParcelTypes();
+
+  Future<HttpResult> fetchCreateParcelBooking({
+    required int tripId,
+    required int parcelTypeId,
+    required double weight,
+    required String receiverPhone,
+    required String pickupLat,
+    required String pickupLong,
+    required String dropoffLat,
+    required String dropoffLong,
+    int? length,
+    int? width,
+    int? height,
+    String? description,
+  }) =>
+      apiProvider.fetchCreateParcelBooking(
+        tripId: tripId,
+        parcelTypeId: parcelTypeId,
+        weight: weight,
+        receiverPhone: receiverPhone,
+        pickupLat: pickupLat,
+        pickupLong: pickupLong,
+        dropoffLat: dropoffLat,
+        dropoffLong: dropoffLong,
+        length: length,
+        width: width,
+        height: height,
+        description: description,
+      );
+
+  Future<HttpResult> fetchUpdateParcelLocation({
+    required int bookingId,
+    required String pickupLat,
+    required String pickupLong,
+    required String dropoffLat,
+    required String dropoffLong,
+  }) =>
+      apiProvider.fetchUpdateParcelLocation(
+        bookingId: bookingId,
+        pickupLat: pickupLat,
+        pickupLong: pickupLong,
+        dropoffLat: dropoffLat,
+        dropoffLong: dropoffLong,
+      );
+
+  Future<HttpResult> fetchClientParcelBookings() =>
+      apiProvider.fetchClientParcelBookings();
+
+  Future<HttpResult> fetchClientParcelBooking(int id) =>
+      apiProvider.fetchClientParcelBooking(id);
+
+  Future<HttpResult> fetchCancelParcelBooking(int id) =>
+      apiProvider.fetchCancelParcelBooking(id);
+
+  Future<HttpResult> fetchDriverParcelBookings() =>
+      apiProvider.fetchDriverParcelBookings();
+
+  Future<HttpResult> fetchDriverParcelBookingsByTrip(int tripId) =>
+      apiProvider.fetchDriverParcelBookingsByTrip(tripId);
 
   Future<HttpResult> fetchUpdateLanguage(String language) =>
       apiProvider.fetchUpdateLanguage(language);
@@ -77,8 +169,9 @@ class Repository {
     String toQuarterId,
     DateTime departureDate,
     DateTime? returnDate,
-    bool? isRoundTrip,
-  ) =>
+    bool? isRoundTrip, {
+    bool acceptsParcels = false,
+  }) =>
       apiProvider.fetchTripSearch(
         fromRegionId,
         toRegionId,
@@ -89,6 +182,7 @@ class Repository {
         departureDate,
         returnDate,
         isRoundTrip,
+        acceptsParcels: acceptsParcels,
       );
 
   Future<HttpResult> fetchTopUp(String amount) =>
@@ -179,8 +273,15 @@ class Repository {
     String startQuarterId,
     String endRegionId,
     String endDistrictId,
-    String endQuarterId,
-  ) =>
+    String endQuarterId, {
+    bool acceptsParcels = false,
+    double? parcelMaxWeight,
+    double? parcelPricePerKg,
+    int? parcelMaxLength,
+    int? parcelMaxWidth,
+    int? parcelMaxHeight,
+    List<int> parcelTypeIds = const [],
+  }) =>
       apiProvider.fetchCreateTrip(
         vehicleId,
         startDate,
@@ -197,6 +298,13 @@ class Repository {
         endRegionId,
         endDistrictId,
         endQuarterId,
+        acceptsParcels: acceptsParcels,
+        parcelMaxWeight: parcelMaxWeight,
+        parcelPricePerKg: parcelPricePerKg,
+        parcelMaxLength: parcelMaxLength,
+        parcelMaxWidth: parcelMaxWidth,
+        parcelMaxHeight: parcelMaxHeight,
+        parcelTypeIds: parcelTypeIds,
       );
 
   Future<HttpResult> fetchOneDriverTrip(String tripId) =>
@@ -216,6 +324,9 @@ class Repository {
 
   Future<HttpResult> fetchCancelDriverTrip(String tripId) =>
       apiProvider.fetchCancelDriverTrip(tripId);
+
+  Future<HttpResult> fetchToggleParcelAcceptance(String tripId) =>
+      apiProvider.fetchToggleParcelAcceptance(tripId);
 
   Future<HttpResult> fetchCancelBooking(String bookingId) =>
       apiProvider.fetchCancelBooking(bookingId);

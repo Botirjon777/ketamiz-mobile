@@ -3,6 +3,7 @@ import 'package:flutter_translate/flutter_translate.dart';
 import '../../../model/api/trip_list_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/utils.dart';
+import '../parcel_image.dart';
 
 class DestinationsContainer extends StatelessWidget {
   const DestinationsContainer({super.key, required this.trip});
@@ -10,15 +11,17 @@ class DestinationsContainer extends StatelessWidget {
   final TripListModel trip;
 
   String get _fromPlace {
-    final parts =
-        [trip.fromCity, trip.fromRegion].where((s) => s.isNotEmpty).toList();
+    final parts = [trip.fromVillage, trip.fromCity, trip.fromRegion]
+        .where((s) => s.isNotEmpty)
+        .toList();
     if (parts.isNotEmpty) return parts.join(', ');
     return trip.fromWhere;
   }
 
   String get _toPlace {
-    final parts =
-        [trip.toCity, trip.toRegion].where((s) => s.isNotEmpty).toList();
+    final parts = [trip.toVillage, trip.toCity, trip.toRegion]
+        .where((s) => s.isNotEmpty)
+        .toList();
     if (parts.isNotEmpty) return parts.join(', ');
     return trip.toWhere;
   }
@@ -222,13 +225,14 @@ class DestinationsContainer extends StatelessWidget {
                     ),
                     Text(
                       _fromPlace,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppTheme.dark,
                         fontSize: 13,
                         fontFamily: AppTheme.fontFamily,
                         fontWeight: FontWeight.w400,
+                        height: 1.3,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -259,13 +263,14 @@ class DestinationsContainer extends StatelessWidget {
                     ),
                     Text(
                       _toPlace,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppTheme.dark,
                         fontSize: 13,
                         fontFamily: AppTheme.fontFamily,
                         fontWeight: FontWeight.w400,
+                        height: 1.3,
                       ),
                     ),
                   ],
@@ -277,16 +282,16 @@ class DestinationsContainer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 84,
+                    height: 52,
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.purple.withOpacity(0.1),
-                      shape: BoxShape.circle,
+                      color: AppTheme.light,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
-                      Icons.directions_car_rounded,
-                      color: AppTheme.purple,
-                      size: 24,
+                    child: Image.asset(
+                      'assets/images/distance.png',
+                      fit: BoxFit.contain,
                     ),
                   ),
                   if (trip.vehicle.model.isNotEmpty) ...[
@@ -343,6 +348,50 @@ class DestinationsContainer extends StatelessWidget {
                 ],
               ),
             ],
+          ),
+          if (trip.acceptsParcels && trip.parcel != null) ...[
+            const SizedBox(height: 12),
+            _buildParcelStrip(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Green strip advertising the driver's parcel rate for this trip, shown as
+  /// a per-kilogram price (e.g. "5,000 UZS/kg").
+  Widget _buildParcelStrip() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.green.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const ParcelImage(size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              translate("home.parcel_price"),
+              style: const TextStyle(
+                color: AppTheme.gray,
+                fontSize: 12,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          Text(
+            "${Utils.priceFromNum(trip.parcel!.pricePerKg)} "
+            "${translate("currency")}/${translate("parcel.kg")}",
+            style: const TextStyle(
+              color: AppTheme.green,
+              fontSize: 13.5,
+              fontFamily: AppTheme.fontFamily,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

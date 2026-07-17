@@ -8,6 +8,7 @@ import 'package:flutter_translate/flutter_translate.dart';
 import 'package:http/http.dart' as http;
 import 'package:ketamiz/src/model/api/created_trip_model.dart';
 import 'package:ketamiz/src/model/api/driver_trips_list_model.dart';
+import 'package:ketamiz/src/model/api/parcel_model.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
 import 'package:ketamiz/src/ui/widgets/containers/leading_back.dart';
 import 'package:latlong2/latlong.dart';
@@ -28,6 +29,7 @@ import '../../widgets/containers/car_container.dart';
 import '../../widgets/texts/text_12h_400w.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 import '../../widgets/texts/text_16h_500w.dart';
+import '../../widgets/parcel_image.dart';
 import '../../widgets/info_tooltip.dart';
 import '../profile/add_vehicle_screen.dart';
 import 'map_select_screen.dart';
@@ -99,6 +101,16 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
 
   List<VehicleModel> myVehicles = [];
 
+  // ── Parcel (posilka) acceptance ─────────────────────────────────────────────
+  bool _acceptsParcels = false;
+  final _parcelMaxWeightController = TextEditingController();
+  final _parcelPriceController = TextEditingController();
+  final _parcelLengthController = TextEditingController();
+  final _parcelWidthController = TextEditingController();
+  final _parcelHeightController = TextEditingController();
+  List<ParcelType> _parcelTypes = [];
+  final Set<int> _selectedParcelTypeIds = {};
+
   @override
   void dispose() {
     fromController.dispose();
@@ -106,7 +118,26 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
     departureController.dispose();
     endController.dispose();
     priceController.dispose();
+    _parcelMaxWeightController.dispose();
+    _parcelPriceController.dispose();
+    _parcelLengthController.dispose();
+    _parcelWidthController.dispose();
+    _parcelHeightController.dispose();
     super.dispose();
+  }
+
+  int? _parcelIntOrNull(String s) {
+    final t = s.trim();
+    if (t.isEmpty) return null;
+    return int.tryParse(t);
+  }
+
+  Future<void> _fetchParcelTypes() async {
+    final response = await _repository.fetchParcelTypes();
+    if (!mounted) return;
+    if (response.isSuccess) {
+      setState(() => _parcelTypes = ParcelType.listFromResult(response.result));
+    }
   }
 
   static final _unknownLocation =
@@ -143,6 +174,7 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
   void initState() {
     getVehicleId();
     getVehicles();
+    _fetchParcelTypes();
     if (widget.driverTrip.id != 0) {
       setLocations();
       departureDate = widget.driverTrip.startTime;
@@ -270,6 +302,29 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
       return;
     }
 
+    // Validate parcel settings when the driver opts to accept parcels.
+    double? parcelMaxWeight;
+    double? parcelPricePerKg;
+    if (_acceptsParcels) {
+      parcelMaxWeight = double.tryParse(_parcelMaxWeightController.text.trim());
+      parcelPricePerKg = double.tryParse(_parcelPriceController.text.trim());
+      if (parcelMaxWeight == null || parcelMaxWeight <= 0) {
+        CustomSnackBar()
+            .showSnackBar(context, translate("parcel.max_weight_error"), 2);
+        return;
+      }
+      if (parcelPricePerKg == null || parcelPricePerKg <= 0) {
+        CustomSnackBar()
+            .showSnackBar(context, translate("parcel.price_error"), 2);
+        return;
+      }
+      if (_selectedParcelTypeIds.isEmpty) {
+        CustomSnackBar()
+            .showSnackBar(context, translate("parcel.types_error"), 2);
+        return;
+      }
+    }
+
     setState(() {
       isLoading = true;
     });
@@ -291,6 +346,13 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
         toRegion.id,
         toCity.id,
         toNeighborhood.id,
+        acceptsParcels: _acceptsParcels,
+        parcelMaxWeight: parcelMaxWeight,
+        parcelPricePerKg: parcelPricePerKg,
+        parcelMaxLength: _parcelIntOrNull(_parcelLengthController.text),
+        parcelMaxWidth: _parcelIntOrNull(_parcelWidthController.text),
+        parcelMaxHeight: _parcelIntOrNull(_parcelHeightController.text),
+        parcelTypeIds: _selectedParcelTypeIds.toList(),
       );
 
       if (response.isSuccess) {
@@ -684,6 +746,8 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
               ),
               const SizedBox(height: 16),
               _priceCard(),
+              const SizedBox(height: 16),
+              _buildParcelSection(),
               _buildRouteSection(),
             ],
           ),
@@ -797,6 +861,22 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
               ),
             ),
           ),
+          if (controller.text.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                controller.text,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.gray,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           GestureDetector(
             onTap: onMapTap,
@@ -1106,8 +1186,6 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
                   size: 18, color: AppTheme.purple),
               const SizedBox(width: 8),
               Text16h500w(title: translate("ketamiz.price_label")),
-              const SizedBox(width: 6),
-              InfoTooltip(message: translate("ketamiz.price_tooltip")),
             ],
           ),
           const SizedBox(height: 12),
@@ -1150,6 +1228,16 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            translate("ketamiz.price_per_seat_note"),
+            style: const TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: AppTheme.gray,
+            ),
+          ),
         ],
       ),
     );
@@ -1158,6 +1246,204 @@ class _CreateNewKetamizScreenState extends State<CreateNewKetamizScreen> {
   // ---------------------------------------------------------------------------
   // Route preview + rules
   // ---------------------------------------------------------------------------
+
+  // ── Parcel acceptance section (driver) ─────────────────────────────────────
+  Widget _buildParcelSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const ParcelImage(size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text16h500w(title: translate("parcel.accept_parcels")),
+              ),
+              Switch.adaptive(
+                value: _acceptsParcels,
+                activeTrackColor: AppTheme.purple,
+                onChanged: (v) => setState(() => _acceptsParcels = v),
+              ),
+            ],
+          ),
+          Text12h400w(
+            title: translate("parcel.accept_parcels_hint"),
+            color: AppTheme.gray,
+          ),
+          if (_acceptsParcels) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _parcelField(
+                    controller: _parcelMaxWeightController,
+                    label: translate("parcel.max_weight_kg"),
+                    hint: "20",
+                    decimal: true,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _parcelField(
+                    controller: _parcelPriceController,
+                    label: translate("parcel.price_per_kg"),
+                    hint: "5000",
+                    decimal: false,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text12h400w(
+              title: translate("parcel.max_dimensions_optional"),
+              color: AppTheme.gray,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _parcelField(
+                    controller: _parcelLengthController,
+                    label: translate("parcel.length"),
+                    hint: "60",
+                    decimal: false,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _parcelField(
+                    controller: _parcelWidthController,
+                    label: translate("parcel.width"),
+                    hint: "40",
+                    decimal: false,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _parcelField(
+                    controller: _parcelHeightController,
+                    label: translate("parcel.height"),
+                    hint: "30",
+                    decimal: false,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text14h400w(title: translate("parcel.accepted_types")),
+            const SizedBox(height: 8),
+            if (_parcelTypes.isEmpty)
+              Text12h400w(
+                title: translate("parcel.types_loading"),
+                color: AppTheme.gray,
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _parcelTypes.map((t) {
+                  final selected = _selectedParcelTypeIds.contains(t.id);
+                  return GestureDetector(
+                    onTap: () => setState(() {
+                      if (selected) {
+                        _selectedParcelTypeIds.remove(t.id);
+                      } else {
+                        _selectedParcelTypeIds.add(t.id);
+                      }
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 9),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppTheme.purple.withValues(alpha: 0.1)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color:
+                              selected ? AppTheme.purple : _kBorderColor,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (selected) ...[
+                            const Icon(Icons.check,
+                                size: 15, color: AppTheme.purple),
+                            const SizedBox(width: 5),
+                          ],
+                          Text(
+                            t.name,
+                            style: TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: selected
+                                  ? AppTheme.purple
+                                  : AppTheme.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _parcelField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required bool decimal,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text12h400w(title: label, color: AppTheme.gray),
+        const SizedBox(height: 6),
+        Container(
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: _fieldDecoration(),
+          alignment: Alignment.center,
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.numberWithOptions(decimal: decimal),
+            cursorColor: AppTheme.purple,
+            inputFormatters: [
+              decimal
+                  ? FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
+                  : FilteringTextInputFormatter.digitsOnly,
+            ],
+            style: const TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.black,
+            ),
+            decoration: InputDecoration(
+              isCollapsed: true,
+              border: InputBorder.none,
+              hintText: hint,
+              hintStyle: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 14,
+                color: AppTheme.gray,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildRouteSection() {
     if (_fromPoint == null || _toPoint == null) return const SizedBox.shrink();

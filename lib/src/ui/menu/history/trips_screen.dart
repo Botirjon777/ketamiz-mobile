@@ -15,6 +15,7 @@ import 'package:ketamiz/src/ui/menu/new_ketamiz/create_new_ketamiz_screen.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/app_dropdown.dart';
 import 'package:ketamiz/src/utils/nav_constants.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/secondary_button.dart';
+import 'package:ketamiz/src/ui/menu/parcels/my_parcels_view.dart';
 import 'package:ketamiz/src/ui/widgets/containers/destinations_container.dart';
 import 'package:ketamiz/src/ui/widgets/containers/history_container.dart';
 import 'package:ketamiz/src/ui/widgets/texts/text_14h_400w.dart';
@@ -33,6 +34,18 @@ class _TripsScreenState extends State<TripsScreen> {
   bool _asDriver = false;
   // 0=All, 1=InProgress, 2=Completed, 3=Canceled
   int _filterIndex = 0;
+  // Sub-tab within a role: 0=Trips (bookings/driver trips), 1=Parcels.
+  int _subTab = 0;
+
+  /// Sub-tabs (Trips | Parcels) show for clients always, and for drivers once
+  /// their documents are verified (otherwise the docs/pending state is shown).
+  bool get _showSubTabs => !_asDriver || _isDocsVerified;
+
+  /// Top padding so list content clears the overlay header. Taller when the
+  /// sub-tabs are shown, and taller still on the Trips sub-tab (which also
+  /// shows the status filter — it doesn't apply to parcels).
+  double get _topPad =>
+      _showSubTabs ? (_subTab == 0 ? 216 : 166) : 140;
 
   bool _isDocsAdded = false;
   bool _isDocsVerified = false;
@@ -86,6 +99,7 @@ class _TripsScreenState extends State<TripsScreen> {
     setState(() {
       _asDriver = asDriver;
       _filterIndex = 0;
+      _subTab = 0;
     });
     _fetch();
   }
@@ -119,7 +133,7 @@ class _TripsScreenState extends State<TripsScreen> {
             else
               _buildClientContent(),
             _buildHeader(),
-            if (_asDriver) _buildCreateTripButton(),
+            if (_asDriver && _subTab == 0) _buildCreateTripButton(),
           ],
         ),
       ),
@@ -161,36 +175,101 @@ class _TripsScreenState extends State<TripsScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: AppDropdown<int>(
-            value: _filterIndex,
-            onChanged: _selectFilter,
-            items: [
-              AppDropdownItem(
-                value: 0,
-                label: translate('history.all'),
-                color: AppTheme.gray,
+        // Sub-tabs: trips (bookings/driver trips) vs. parcels.
+        if (_showSubTabs) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildSubTabs(),
+          ),
+          const SizedBox(height: 8),
+        ],
+        // Status filter applies to the trips sub-tab only.
+        if (_subTab == 0)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: AppDropdown<int>(
+              value: _filterIndex,
+              onChanged: _selectFilter,
+              items: [
+                AppDropdownItem(
+                  value: 0,
+                  label: translate('history.all'),
+                  color: AppTheme.gray,
+                ),
+                AppDropdownItem(
+                  value: 1,
+                  label: translate('history.in_progress'),
+                  color: AppTheme.purple,
+                ),
+                AppDropdownItem(
+                  value: 2,
+                  label: translate('history.completed'),
+                  color: const Color(0xFF4CAF50),
+                ),
+                AppDropdownItem(
+                  value: 3,
+                  label: translate('history.canceled'),
+                  color: const Color(0xFFE53935),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Trips / Parcels sub-tabs, styled identically to the Driver / Client role
+  /// toggle above (white pill wrapper + a purple pill for the active segment).
+  Widget _buildSubTabs() {
+    Widget tab(int index, String label) {
+      final active = _subTab == index;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () {
+            if (_subTab == index) return;
+            setState(() => _subTab = index);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: active ? AppTheme.purple : Colors.transparent,
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w500,
+                color: active ? Colors.white : AppTheme.dark,
               ),
-              AppDropdownItem(
-                value: 1,
-                label: translate('history.in_progress'),
-                color: AppTheme.purple,
-              ),
-              AppDropdownItem(
-                value: 2,
-                label: translate('history.completed'),
-                color: const Color(0xFF4CAF50),
-              ),
-              AppDropdownItem(
-                value: 3,
-                label: translate('history.canceled'),
-                color: const Color(0xFFE53935),
-              ),
-            ],
+            ),
           ),
         ),
-      ],
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            offset: const Offset(0, 5),
+            blurRadius: 100,
+            spreadRadius: 0,
+            color: Colors.black.withValues(alpha: 0.15),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          tab(0, translate('history.my_trips')),
+          tab(1, translate('parcel.my_parcels')),
+        ],
+      ),
     );
   }
 
@@ -221,6 +300,10 @@ class _TripsScreenState extends State<TripsScreen> {
   // ── Client content ────────────────────────────────────────────────────────
 
   Widget _buildClientContent() {
+    // Parcels sub-tab has its own fetch/state, independent of the trip streams.
+    if (_subTab == 1) {
+      return MyParcelsView(topPadding: _topPad);
+    }
     return RefreshIndicator(
       color: AppTheme.black,
       onRefresh: _onRefresh,
@@ -243,8 +326,8 @@ class _TripsScreenState extends State<TripsScreen> {
               final bookings = snap.data!;
               if (bookings.isEmpty) return _buildClientEmpty();
               return ListView.builder(
-                padding: const EdgeInsets.only(
-                  top: 140,
+                padding: EdgeInsets.only(
+                  top: _topPad,
                   bottom: kNavBarTotalPadding,
                   left: 16,
                   right: 16,
@@ -280,7 +363,7 @@ class _TripsScreenState extends State<TripsScreen> {
 
   Widget _buildClientEmpty() {
     return ListView(
-      padding: const EdgeInsets.only(top: 140),
+      padding: EdgeInsets.only(top: _topPad),
       children: [
         SizedBox(
           height: MediaQuery.of(context).size.height - 300,
@@ -307,6 +390,11 @@ class _TripsScreenState extends State<TripsScreen> {
     if (!_isDocsAdded && !_isDocsVerified) return _buildAddDocsState();
     if (!_isDocsVerified) return _buildVerificationPendingState();
 
+    // Parcels sub-tab: parcels received across the driver's trips.
+    if (_subTab == 1) {
+      return MyParcelsView(driver: true, topPadding: _topPad);
+    }
+
     return RefreshIndicator(
       color: AppTheme.purple,
       onRefresh: _onRefresh,
@@ -318,8 +406,8 @@ class _TripsScreenState extends State<TripsScreen> {
           if (trips.isEmpty) return _buildDriverEmpty();
           return ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(
-              top: 140,
+            padding: EdgeInsets.only(
+              top: _topPad,
               bottom: kNavBarTotalPadding,
               left: 24,
               right: 24,
@@ -415,7 +503,7 @@ class _TripsScreenState extends State<TripsScreen> {
 
   Widget _buildDriverEmpty() {
     return ListView(
-      padding: const EdgeInsets.only(top: 140),
+      padding: EdgeInsets.only(top: _topPad),
       children: [
         SizedBox(
           height: MediaQuery.of(context).size.height -
@@ -485,11 +573,11 @@ class _TripsScreenState extends State<TripsScreen> {
       child: ListView.builder(
         itemCount: 6,
         shrinkWrap: true,
-        padding: const EdgeInsets.only(
+        padding: EdgeInsets.only(
           left: 24,
           right: 24,
           bottom: kNavBarTotalPadding,
-          top: 140,
+          top: _topPad,
         ),
         itemBuilder: (context, i) => Column(
           children: [
@@ -629,6 +717,8 @@ class _TripsScreenState extends State<TripsScreen> {
           code: '',
         ),
       ),
+      acceptsParcels: t.acceptsParcels,
+      parcel: t.parcel,
     );
   }
 }

@@ -11,6 +11,7 @@ import 'package:ketamiz/src/ui/widgets/texts/text_16h_500w.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import '../../resources/repository.dart';
+import '../../services/push_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/secure_storage.dart';
 import '../dialogs/center_dialog.dart';
@@ -357,6 +358,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
         final login = LoginModel.fromJson(response.result);
         if (login.authorisation.token.isNotEmpty) {
           await SecureStorage.setToken(login.authorisation.token);
+          // JWT is ready — register this device for push notifications.
+          PushNotificationService.instance.registerToken();
           SharedPreferences prefs = await SharedPreferences.getInstance();
           prefs.setBool("isFirst", false);
           prefs.setString(

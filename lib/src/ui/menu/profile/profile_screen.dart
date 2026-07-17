@@ -8,6 +8,7 @@ import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/snack_bar.dart';
 import 'package:ketamiz/src/ui/menu/new_ketamiz/add_docs_screen.dart';
+import 'package:ketamiz/src/ui/menu/profile/change_password_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/edit_profile_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/my_vehicles_screen.dart';
 import 'package:ketamiz/src/ui/menu/profile/support_screen.dart';
@@ -21,12 +22,14 @@ import '../../../bloc/profile_bloc.dart';
 import '../../../model/api/get_user_model.dart';
 import '../../../model/settings_model.dart';
 import '../../../resources/repository.dart';
+import '../../../services/push_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/image_helper.dart';
 import '../../../utils/nav_constants.dart';
 import '../../../utils/secure_storage.dart';
 import '../../../utils/utils.dart';
 import '../../widgets/containers/settings_container.dart';
+import '../notifications/notifications_screen.dart';
 import '../../widgets/notification_button.dart';
 import '../../widgets/texts/text_14h_400w.dart';
 
@@ -155,10 +158,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 20),
             ],
             _sectionLabel(translate("profile.settings")),
-            SettingsContainer(
-              settingsModel: SettingsModel(
-                icon: Icons.lock_outline_rounded,
-                title: translate("profile.change_password"),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+              ),
+              child: SettingsContainer(
+                settingsModel: SettingsModel(
+                  icon: Icons.lock_outline_rounded,
+                  title: translate("profile.change_password"),
+                ),
               ),
             ),
             GestureDetector(
@@ -171,10 +180,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 trailingText: _langName,
               ),
             ),
-            SettingsContainer(
-              settingsModel: SettingsModel(
-                icon: Icons.notifications_none_rounded,
-                title: translate("profile.notifications"),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              ),
+              child: SettingsContainer(
+                settingsModel: SettingsModel(
+                  icon: Icons.notifications_none_rounded,
+                  title: translate("profile.notifications"),
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -714,6 +729,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       translate("profile.logout_confirm"),
       onConfirm: () async {
         Navigator.pop(context); // close the dialog
+        // Stop pushes to this device while the JWT is still valid.
+        await PushNotificationService.instance.unregisterToken();
         // Best-effort server logout; proceed regardless of result.
         try {
           await Repository().fetchLogout();
@@ -737,6 +754,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onConfirm: () async {
         Navigator.pop(context); // close the confirmation dialog
         setState(() => _isDeletingAccount = true);
+
+        // Remove this device's push token while the JWT is still valid.
+        await PushNotificationService.instance.unregisterToken();
 
         final response = await Repository().fetchDeleteAccount();
         if (!mounted) return;

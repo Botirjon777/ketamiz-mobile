@@ -32,3 +32,23 @@ Runner/GeneratedPluginRegistrant.*
 !default.mode2v3
 !default.pbxuser
 !default.perspectivev3
+
+# Bundler — local config and installed gems (must not leak into CI)
+.bundle/
+vendor/bundle/
+
+# Build artifacts (output of fastlane build_app)
+*.ipa
+*.dSYM.zip
+
+# Fastlane — secret and generated files (never commit these)
+fastlane/README.md
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest

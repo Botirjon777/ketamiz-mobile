@@ -83,7 +83,9 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
           value: carModelController.text.isNotEmpty ? carModelController.text : null,
           onTap: () {
             BottomDialog.showSelectCar(context, (value) {
-              if (value.id != 0 && selectedVehicle.id != value.id) {
+              if (value.id != 0 &&
+                  (selectedVehicle.id != value.id ||
+                      selectedVehicle.vehicleName != value.vehicleName)) {
                 setState(() {
                   selectedVehicle = value;
                   carModelController.text = selectedVehicle.vehicleName;

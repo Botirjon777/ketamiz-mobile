@@ -9,7 +9,7 @@ import '../dialogs/response_popup.dart';
 import '../widgets/auth_banner.dart';
 import '../widgets/buttons/secondary_button.dart';
 import '../widgets/textfield/labeled_input_field.dart';
-import 'verification_screen.dart';
+import 'reset_password_verification_screen.dart';
 
 /// Collects the user's phone number to start the password-recovery flow.
 /// A verification code is sent (reusing the resend endpoint) and the user is
@@ -41,7 +41,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     final phone = uzFullPhone(_phoneController.text);
     setState(() => _isLoading = true);
-    final response = await _repository.fetchVerificationResend(phone);
+    final response = await _repository.fetchSendResetCode(phone);
     if (!mounted) return;
     setState(() => _isLoading = false);
 
@@ -49,7 +49,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => VerificationScreen(phone: phone),
+          builder: (context) => ResetPasswordVerificationScreen(phone: phone),
         ),
       );
     } else {
