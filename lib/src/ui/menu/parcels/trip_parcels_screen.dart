@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_translate/flutter_translate.dart';
 
-import '../../../theme/app_theme.dart';
 import '../../widgets/containers/leading_back.dart';
 import '../../widgets/texts/text_16h_500w.dart';
 import 'my_parcels_view.dart';

@@ -9,7 +9,6 @@ import 'package:ketamiz/src/ui/dialogs/bottom_dialog.dart';
 import 'package:ketamiz/src/ui/dialogs/center_dialog.dart';
 import 'package:ketamiz/src/ui/menu/main_screen.dart';
 import 'package:ketamiz/src/ui/widgets/buttons/primary_button.dart';
-import 'package:ketamiz/src/ui/widgets/textfield/main_textfield.dart';
 import 'package:ketamiz/src/ui/widgets/textfield/labeled_input_field.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
